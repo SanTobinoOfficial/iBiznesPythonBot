@@ -433,6 +433,11 @@ O: Upewnij się że fokus jest na oknie iBiznes. Zwiększ opóźnienie po ostatn
 
 ## Changelog
 
+### v2.2.10 (2026-03)
+- **START.bat**: Naprawiono `Nie można odnaleźć dysku.` – INSTALL.bat uruchamiany przez `cmd /c` zamiast bezpośrednio przez `start` (bardziej niezawodne dla plików `.bat`)
+- **START.bat**: Dodano walidację katalogu programu na samym początku – czytelny błąd jeśli dysk/pendrive jest odłączony
+- **START.bat**: Wszystkie ścieżki do `_installed.flag` i `INSTALL.bat` są teraz absolutne (`%~dp0`) zamiast względnych (odporność na błędy `cd /d`)
+
 ### v2.2.9 (2026-03)
 - **START.bat**: Naprawiono krytyczny błąd – `start /wait` zamiast `call` dla INSTALL.bat (zapobiega nadpisaniem pliku w trakcie jego działania przez samego siebie)
 - **START.bat**: Naprawiono porównywanie wersji – PowerShell `.Trim()` usuwa znaki `\r`/CRLF (błąd powodował nieskończoną pętlę aktualizacji)

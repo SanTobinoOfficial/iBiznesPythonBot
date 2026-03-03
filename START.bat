@@ -15,19 +15,35 @@ echo.
 set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
 
 :: ============================================================
+::  SPRAWDZ CZY KATALOG PROGRAMU JEST DOSTEPNY
+:: ============================================================
+if not exist "%~dp0." (
+    color 0C
+    echo  BLAD: Katalog programu jest niedostepny:
+    echo  %~dp0
+    echo.
+    echo  Upewnij sie ze dysk lub pendrive jest podlaczony.
+    echo  Lub skopiuj folder programu na dysk C: i uruchom ponownie.
+    echo.
+    pause
+    exit /b 1
+)
+
+:: ============================================================
 ::  [1] SPRAWDZ INSTALACJE – jesli brak, uruchom automatycznie
 :: ============================================================
-if not exist "_installed.flag" (
+if not exist "%~dp0_installed.flag" (
     color 0E
     echo  Program nie jest zainstalowany. Uruchamiam instalacje...
+    echo  Katalog: %~dp0
     echo.
 
     :: Pobierz INSTALL.bat jesli rowniez go brakuje
-    if not exist "INSTALL.bat" (
+    if not exist "%~dp0INSTALL.bat" (
         echo  Pobieranie INSTALL.bat z GitHub...
         powershell -NoProfile -Command ^
-            "try { Invoke-WebRequest -Uri '%BASE_URL%/INSTALL.bat' -OutFile 'INSTALL.bat' -UseBasicParsing -ErrorAction Stop; Write-Host '  [OK] Pobrano INSTALL.bat' } catch { Write-Host '  [BLAD] Nie mozna pobrac INSTALL.bat: ' $_.Exception.Message }"
-        if not exist "INSTALL.bat" (
+            "try { Invoke-WebRequest -Uri '%BASE_URL%/INSTALL.bat' -OutFile '%~dp0INSTALL.bat' -UseBasicParsing -ErrorAction Stop; Write-Host '  [OK] Pobrano INSTALL.bat' } catch { Write-Host '  [BLAD] Nie mozna pobrac INSTALL.bat: ' $_.Exception.Message }"
+        if not exist "%~dp0INSTALL.bat" (
             color 0C
             echo.
             echo  BLAD: Nie mozna pobrac INSTALL.bat
@@ -39,16 +55,16 @@ if not exist "_installed.flag" (
     )
 
     echo.
-    :: UWAGA: start /wait zamiast call – INSTALL.bat moze nadpisac START.bat,
-    ::         wiec uruchamiamy w NOWYM procesie i po skonczeniu restartujemy sie
-    start /wait "" "%~dp0INSTALL.bat"
+    :: UWAGA: cmd /c zamiast bezposredniego start – bardziej niezawodne dla .bat
+    ::         Nowy proces cmd, wiec INSTALL.bat moze nadpisac ten plik bez problemow
+    start /wait "iBiznes Bot - Instalacja" cmd /c ""%~dp0INSTALL.bat""
 
     :: Sprawdz czy instalacja sie powiodla
-    if not exist "_installed.flag" (
+    if not exist "%~dp0_installed.flag" (
         color 0C
         echo.
         echo  BLAD: Instalacja nie powiodla sie.
-        echo  Sprawdz bledy powyzej i spróbuj ponownie.
+        echo  Sprawdz bledy powyzej i sprobuj ponownie.
         pause
         exit /b 1
     )
@@ -108,9 +124,9 @@ if exist "_remote_ver.tmp" (
         echo  Aktualizowanie plikow programu...
         echo  (coords.json z ustawieniami NIE jest nadpisywany)
         echo.
-        :: UWAGA: start /wait zamiast call – INSTALL.bat nadpisuje ten plik!
+        :: UWAGA: cmd /c zamiast bezposredniego start – bardziej niezawodne dla .bat
         ::         Po aktualizacji restartujemy START.bat z SKIP_UPDATE
-        start /wait "" "%~dp0INSTALL.bat" FORCE
+        start /wait "iBiznes Bot - Aktualizacja" cmd /c ""%~dp0INSTALL.bat" FORCE"
         echo  Aktualizacja zakonczona. Restartuje program...
         start "" "%~f0" SKIP_UPDATE
         exit /b 0
