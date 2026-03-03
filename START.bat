@@ -14,15 +14,43 @@ echo.
 set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
 
 :: ============================================================
-::  [1] SPRAWDZ INSTALACJE
+::  [1] SPRAWDZ INSTALACJE – jesli brak, uruchom automatycznie
 :: ============================================================
 if not exist "_installed.flag" (
-    color 0C
-    echo  BLAD: Program nie jest zainstalowany.
-    echo  Uruchom najpierw INSTALL.bat
+    color 0E
+    echo  Program nie jest zainstalowany. Uruchamiam instalacje...
     echo.
-    pause
-    exit /b 1
+
+    :: Pobierz INSTALL.bat jesli rowniez go brakuje
+    if not exist "INSTALL.bat" (
+        echo  Pobieranie INSTALL.bat z GitHub...
+        powershell -NoProfile -Command ^
+            "try { Invoke-WebRequest -Uri '%BASE_URL%/INSTALL.bat' -OutFile 'INSTALL.bat' -UseBasicParsing -ErrorAction Stop; Write-Host '  [OK] Pobrano INSTALL.bat' } catch { Write-Host '  [BLAD] Nie mozna pobrac INSTALL.bat: ' $_.Exception.Message }"
+        if not exist "INSTALL.bat" (
+            color 0C
+            echo.
+            echo  BLAD: Nie mozna pobrac INSTALL.bat
+            echo  Pobierz recznie ze: https://github.com/SanTobinoOfficial/iBiznesPythonBot
+            echo.
+            pause
+            exit /b 1
+        )
+    )
+
+    echo.
+    call INSTALL.bat
+
+    :: Sprawdz czy instalacja sie powiodla
+    if not exist "_installed.flag" (
+        color 0C
+        echo.
+        echo  BLAD: Instalacja nie powiodla sie.
+        echo  Sprawdz bledy powyzej i spróbuj ponownie.
+        pause
+        exit /b 1
+    )
+    color 0A
+    echo.
 )
 
 :: ============================================================
