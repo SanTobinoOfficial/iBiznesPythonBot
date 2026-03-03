@@ -26,3 +26,8 @@ __pycache__/
 
 # AutoHotkey setup
 ahk_setup.exe
+
+# Narzedzia IDE / Claude
+.claude/
+.vscode/
+.idea/
