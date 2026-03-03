@@ -29,7 +29,7 @@ if "!FORCE!"=="1" (
 ::  Zmien BASE_URL na adres raw swojego repozytorium GitHub
 ::  Przyklad: https://raw.githubusercontent.com/mojNick/iBiznesPythonBot/main
 :: ============================================================
-set "BASE_URL=https://raw.githubusercontent.com/TWOJ_NICK/iBiznesPythonBot/main"
+set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
 
 :: Pliki projektu (zawsze pobierane/aktualizowane)
 set "PLIKI_UPDATE=server.py pdf_to_csv.py ibiznes.ahk ui.html START.bat version.txt"

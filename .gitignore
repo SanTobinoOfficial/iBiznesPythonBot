@@ -1,0 +1,28 @@
+# Logi
+*.log
+*.tmp
+
+# Pliki tymczasowe bota
+task.json
+result.json
+_remote_ver.tmp
+_installed.flag
+_firstrun.flag
+
+# Ustawienia użytkownika (nie wrzucaj na GitHub - każdy ma inne)
+config.json
+history.json
+price_alerts.txt
+
+# Wgrane pliki
+uploads/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# AutoHotkey setup
+ahk_setup.exe

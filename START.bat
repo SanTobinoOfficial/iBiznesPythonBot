@@ -11,7 +11,7 @@ echo.
 ::  KONFIGURACJA – taki sam BASE_URL jak w INSTALL.bat!
 ::  Zmien na adres swojego repozytorium GitHub.
 :: ============================================================
-set "BASE_URL=https://raw.githubusercontent.com/TWOJ_NICK/iBiznesPythonBot/main"
+set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
 
 :: ============================================================
 ::  [1] SPRAWDZ INSTALACJE

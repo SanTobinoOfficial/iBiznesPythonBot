@@ -40,7 +40,7 @@ Zautomatyzowany panel do wprowadzania faktur zakupowych w programie **iBiznes**.
 Przed pierwszym uruchomieniem otwórz **oba** pliki w Notatniku i zmień linię BASE_URL:
 
 ```
-set "BASE_URL=https://raw.githubusercontent.com/TWOJ_NICK/iBiznesPythonBot/main"
+set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
 ```
 
 Zmień `TWOJ_NICK/iBiznesPythonBot` na właściwy adres Twojego repozytorium GitHub.
@@ -279,7 +279,7 @@ Lub kliknij dwukrotnie `INSTALL.bat` – pobierze wszystkie brakujące pliki.
 
 1. **Zły BASE_URL** – otwórz `INSTALL.bat` w Notatniku i zmień linię:
    ```
-   set "BASE_URL=https://raw.githubusercontent.com/TWOJ_NICK/iBiznesPythonBot/main"
+   set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
    ```
    na właściwy adres raw GitHuba. Adres musi zaczynać się od `raw.githubusercontent.com`.
 
