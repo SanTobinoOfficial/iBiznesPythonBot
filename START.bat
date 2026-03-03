@@ -39,7 +39,9 @@ if not exist "_installed.flag" (
     )
 
     echo.
-    call INSTALL.bat
+    :: UWAGA: start /wait zamiast call – INSTALL.bat moze nadpisac START.bat,
+    ::         wiec uruchamiamy w NOWYM procesie i po skonczeniu restartujemy sie
+    start /wait "" "%~dp0INSTALL.bat"
 
     :: Sprawdz czy instalacja sie powiodla
     if not exist "_installed.flag" (
@@ -50,8 +52,9 @@ if not exist "_installed.flag" (
         pause
         exit /b 1
     )
-    color 0A
-    echo.
+    :: Restart – wczytaj swiezo zainstalowane pliki (w tym ew. nowy START.bat)
+    start "" "%~f0" SKIP_UPDATE
+    exit /b 0
 )
 
 :: ============================================================
@@ -67,25 +70,31 @@ if %errorlevel% neq 0 (
 )
 
 :: ============================================================
-::  [3] SPRAWDZ AKTUALIZACJE
+::  [3] SPRAWDZ AKTUALIZACJE  (pomijamy jesli SKIP_UPDATE przekazany)
 :: ============================================================
+if /i "%1"=="SKIP_UPDATE" (
+    echo  [Pomijam sprawdzanie aktualizacji po swiezej instalacji]
+    echo.
+    goto :RUN_SERVER
+)
+
 echo  Sprawdzanie aktualizacji...
 
 del /f /q "_remote_ver.tmp" 2>nul
+:: Pobierz wersje zdalnie przez PowerShell – zapisz jako UTF-8 bez BOM, LF
 powershell -NoProfile -Command ^
-    "try { Invoke-WebRequest -Uri '%BASE_URL%/version.txt' -OutFile '_remote_ver.tmp' -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop } catch { }" 2>nul
+    "try { $v = (Invoke-WebRequest -Uri '%BASE_URL%/version.txt' -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop).Content.Trim(); [IO.File]::WriteAllText('_remote_ver.tmp', $v) } catch { }" 2>nul
 
 if exist "_remote_ver.tmp" (
+    :: set /p czyta do LF – PowerShell zapisal bez CR wiec trim jest zbedny, ale zostawiamy
     set /p REMOTE_VER=<_remote_ver.tmp
     del /f /q "_remote_ver.tmp" 2>nul
-
-    :: Trim whitespace/newline from REMOTE_VER
     for /f "tokens=* delims= " %%V in ("!REMOTE_VER!") do set "REMOTE_VER=%%V"
 
     set "LOCAL_VER=brak"
     if exist "version.txt" (
-        set /p LOCAL_VER=<version.txt
-        for /f "tokens=* delims= " %%V in ("!LOCAL_VER!") do set "LOCAL_VER=%%V"
+        :: Czytaj lokalny version.txt tak samo – przez PowerShell aby uniknac CR
+        for /f "usebackq tokens=* delims=" %%V in (`powershell -NoProfile -Command "(Get-Content version.txt -Raw).Trim()"`) do set "LOCAL_VER=%%V"
     )
 
     if not "!REMOTE_VER!"=="!LOCAL_VER!" (
@@ -99,19 +108,22 @@ if exist "_remote_ver.tmp" (
         echo  Aktualizowanie plikow programu...
         echo  (coords.json z ustawieniami NIE jest nadpisywany)
         echo.
-        call INSTALL.bat FORCE
-        color 0A
-        echo.
-        echo  Aktualizacja zakonczona. Uruchamiam program...
-        echo.
+        :: UWAGA: start /wait zamiast call – INSTALL.bat nadpisuje ten plik!
+        ::         Po aktualizacji restartujemy START.bat z SKIP_UPDATE
+        start /wait "" "%~dp0INSTALL.bat" FORCE
+        echo  Aktualizacja zakonczona. Restartuje program...
+        start "" "%~f0" SKIP_UPDATE
+        exit /b 0
     ) else (
         echo  [OK] Program jest aktualny (v!LOCAL_VER!)
         echo.
     )
 ) else (
-    echo  [Brak polaczenia z internenem - pomijam sprawdzanie aktualizacji]
+    echo  [Brak polaczenia z internetem - pomijam sprawdzanie aktualizacji]
     echo.
 )
+
+:RUN_SERVER
 
 :: ============================================================
 ::  [4] SPRAWDZ PLIKI
