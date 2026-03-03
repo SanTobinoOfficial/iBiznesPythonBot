@@ -35,40 +35,23 @@ Zautomatyzowany panel do wprowadzania faktur zakupowych w programie **iBiznes**.
 
 ## Instalacja
 
-### Konfiguracja BASE_URL (wymagana!)
-
-Przed pierwszym uruchomieniem otwórz **oba** pliki w Notatniku i zmień linię BASE_URL:
-
-```
-set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
-```
-
-Zmień `TWOJ_NICK/iBiznesPythonBot` na właściwy adres Twojego repozytorium GitHub.
-> Tę samą zmianę wprowadź w `INSTALL.bat` **i** w `START.bat`.
-
----
-
 ### Szybki start (masz już pliki)
 
-1. Skonfiguruj BASE_URL w `INSTALL.bat` i `START.bat` (patrz wyżej)
-2. Uruchom **`INSTALL.bat`** jako Administrator (prawy przycisk → Uruchom jako administrator)
-3. Poczekaj na komunikat `Instalacja zakonczona pomyslnie!`
-4. Uruchom program przez **`START.bat`**
+1. Uruchom **`INSTALL.bat`** jako Administrator (prawy przycisk → Uruchom jako administrator)
+2. Poczekaj na komunikat `Instalacja zakonczona pomyslnie!`
+3. Uruchom program przez **`START.bat`**
 
 ### Instalacja z jednego pliku (tylko INSTALL.bat)
 
-Jeśli masz tylko plik `INSTALL.bat`:
-
-1. Otwórz go w Notatniku i ustaw poprawny `BASE_URL`
-2. Uruchom jako Administrator
+Jeśli masz tylko plik `INSTALL.bat`, wystarczy go uruchomić jako Administrator.
 
 Instalator automatycznie (4 kroki):
 1. Sprawdza Python
-2. Pobiera wszystkie pliki projektu z GitHuba (pliki już istniejące są pomijane; `coords.json` **nigdy** nie jest nadpisywany)
+2. **Pobiera całe repozytorium jako ZIP** z GitHuba i rozpakowuje wszystkie pliki projektu (`coords.json` **nigdy** nie jest nadpisywany)
 3. Pobiera i instaluje **AutoHotkey v2** (jeśli nie jest zainstalowany)
 4. Instaluje biblioteki Python
 
-**Pobierane pliki projektu:**
+**Pobierane pliki projektu (z repo ZIP):**
 ```
 server.py, pdf_to_csv.py, ibiznes.ahk, ui.html, START.bat, version.txt
 coords.json  ← tylko jeśli NIE istnieje (zawiera Twoje ustawienia koordynatów)
@@ -88,8 +71,9 @@ Pillow, pdfplumber, openpyxl, xlwt
 
 1. Pobiera `version.txt` z GitHuba (timeout 5 sekund)
 2. Porównuje z lokalną wersją
-3. Jeśli wersja się różni → automatycznie wywołuje `INSTALL.bat FORCE`, który pobiera zaktualizowane pliki projektu
-4. `coords.json` z Twoimi koordynatami **nigdy** nie jest nadpisywany
+3. Jeśli wersja się różni → uruchamia `INSTALL.bat FORCE` (w nowym procesie), który pobiera ZIP z repo i rozpakowuje pliki
+4. Po aktualizacji program restartuje się automatycznie z flagą `SKIP_UPDATE`
+5. `coords.json` z Twoimi koordynatami **nigdy** nie jest nadpisywany
 
 > Jeśli nie masz internetu – sprawdzanie jest pomijane i program działa normalnie.
 
@@ -277,19 +261,17 @@ Lub kliknij dwukrotnie `INSTALL.bat` – pobierze wszystkie brakujące pliki.
 
 **Przyczyny i rozwiązania:**
 
-1. **Zły BASE_URL** – otwórz `INSTALL.bat` w Notatniku i zmień linię:
+1. **Zły REPO_ZIP** – otwórz `INSTALL.bat` w Notatniku i sprawdź linię:
    ```
-   set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
+   set "REPO_ZIP=https://github.com/SanTobinoOfficial/iBiznesPythonBot/archive/refs/heads/main.zip"
    ```
-   na właściwy adres raw GitHuba. Adres musi zaczynać się od `raw.githubusercontent.com`.
+   Musi wskazywać na właściwy URL ZIP repozytorium GitHub.
 
 2. **Brak internetu** – sprawdź połączenie sieciowe i spróbuj ponownie.
 
 3. **Firewall / antywirus blokuje PowerShell** – uruchom `INSTALL.bat` jako Administrator.
 
-4. **Pliki już istnieją lokalnie** – instalator pomija pobieranie jeśli plik już istnieje w folderze. To normalne zachowanie.
-
-> **Wskazówka:** Jeśli masz już wszystkie pliki na dysku, możesz uruchomić INSTALL.bat bez konfigurowania BASE_URL – pobieranie jest pomijane dla istniejących plików.
+4. **Brak miejsca na dysku** – instalator pobiera ZIP (~kilka MB). Upewnij się że masz wolne miejsce.
 
 ---
 
@@ -450,6 +432,25 @@ O: Upewnij się że fokus jest na oknie iBiznes. Zwiększ opóźnienie po ostatn
 ---
 
 ## Changelog
+
+### v2.2.9 (2026-03)
+- **START.bat**: Naprawiono krytyczny błąd – `start /wait` zamiast `call` dla INSTALL.bat (zapobiega nadpisaniem pliku w trakcie jego działania przez samego siebie)
+- **START.bat**: Naprawiono porównywanie wersji – PowerShell `.Trim()` usuwa znaki `\r`/CRLF (błąd powodował nieskończoną pętlę aktualizacji)
+- **START.bat**: Dodano flagę `SKIP_UPDATE` – po aktualizacji/instalacji program restartuje się bez ponownego sprawdzania wersji
+
+### v2.2.8 (2026-03)
+- **START.bat**: Dodano `cd /d "%~dp0"` – poprawne uruchamianie z dowolnej lokalizacji
+- **START.bat**: Pętla oczekiwania na serwer Flask (maks. 15 sekund, co sekundę pinguje `localhost:5000`)
+- **CI**: Naprawiono auto-merge – dynamiczne wyszukiwanie otwartego PR zamiast hardcoded `#1`
+
+### v2.2.7 (2026-03)
+- **server.py**: Naprawiono błąd numeru faktury – zwracano NIP zamiast `invoiceNr`
+- **server.py**: Naprawiono pobieranie XLS dla ścieżek ze spacjami i polskimi znakami (URL encode)
+- **pdf_to_csv.py**: Naprawiono operator precedence w funkcji parsowania ilości (dodano nawiasy)
+- **ibiznes.ahk**: Dodano `WinActivate` po F7 zapobiegające kradzieży focusu przez dialog
+- **ibiznes.ahk**: Naprawiono detekcję dialogu iBiznes (`WinExist` z `ahk_exe iBiznes.exe`)
+- **INSTALL.bat**: Przepisano – pobiera pełne repozytorium jako ZIP (zamiast plików po kolei)
+- **CI**: Dodano GitHub Actions (syntax check Python + auto-merge v2.0 → main)
 
 ### v2.0 (2026-03)
 - Nowy przepływ AHK: absolutne koordynaty pikseli (`ClickAbs`) – usunięto `ControlSetText`, `DllCall`, `VirtualAllocEx`
