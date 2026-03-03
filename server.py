@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.parse
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -308,7 +309,7 @@ class JobRunner:
 
             # Zapisz w historii
             save_history({
-                "invoiceNr":   task["nip"] and task["invoiceNr"],
+                "invoiceNr":   task["invoiceNr"],
                 "nip":         task["nip"],
                 "invoiceDate": task["invoiceDate"],
                 "currency":    currency,
@@ -759,7 +760,7 @@ def api_safe_convert():
         xls_path   = os.path.join(UPLOADS_DIR, xls_name)
         exporter.to_ibiznes_xls(xls_path, currency=currency, rate=rate)
 
-        download_url = f"/api/download?path={xls_path}"
+        download_url = f"/api/download?path={urllib.parse.quote(xls_path)}"
         log.info(f"Safe-convert OK: {xls_path} ({len(items)} pozycji, kurs={rate})")
 
         return jsonify({

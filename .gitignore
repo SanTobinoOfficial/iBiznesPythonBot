@@ -1,20 +1,21 @@
-# Logi
+# Runtime / generowane przez bota
 *.log
 *.tmp
-
-# Pliki tymczasowe bota
 task.json
 result.json
+_repo.zip
+_repo_tmp/
 _remote_ver.tmp
+
+# Instalacja
 _installed.flag
 _firstrun.flag
 
-# Ustawienia użytkownika (nie wrzucaj na GitHub - każdy ma inne)
+# Konfiguracja użytkownika (NIE commituj)
 config.json
 history.json
-price_alerts.txt
 
-# Wgrane pliki
+# Przesłane pliki
 uploads/
 
 # Python
@@ -22,12 +23,16 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.env
+.venv/
+venv/
+*.egg-info/
 
-# AutoHotkey setup
-ahk_setup.exe
-
-# Narzedzia IDE / Claude
-.claude/
+# IDE
 .vscode/
 .idea/
+
+# Claude
+.claude/
+
+# Kopia zapasowa coords
+coords.json.bak

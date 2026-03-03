@@ -287,7 +287,7 @@ class InvoicePDFParser:
 
         # Fallback – wyciagnij tylko liczbe
         num = re.search(r'^(\d+(?:\.\d+)?)', qtmu_raw)
-        return float(num.group(1)) if num else 1.0, 'pcs', ''
+        return (float(num.group(1)) if num else 1.0), 'pcs', ''
 
     @staticmethod
     def _parse_price(raw: str) -> Optional[float]:

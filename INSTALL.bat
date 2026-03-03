@@ -26,16 +26,14 @@ if "!FORCE!"=="1" (
 
 :: ============================================================
 ::  KONFIGURACJA
-::  Zmien BASE_URL na adres raw swojego repozytorium GitHub
-::  Przyklad: https://raw.githubusercontent.com/mojNick/iBiznesPythonBot/main
+::  Zmien REPO_ZIP na adres ZIP swojego repozytorium GitHub
+::  Format: https://github.com/UZYTKOWNIK/REPO/archive/refs/heads/BRANCH.zip
 :: ============================================================
-set "BASE_URL=https://raw.githubusercontent.com/SanTobinoOfficial/iBiznesPythonBot/main"
+set "REPO_ZIP=https://github.com/SanTobinoOfficial/iBiznesPythonBot/archive/refs/heads/main.zip"
+set "REPO_FOLDER=iBiznesPythonBot-main"
 
-:: Pliki projektu (zawsze pobierane/aktualizowane)
-set "PLIKI_UPDATE=server.py pdf_to_csv.py ibiznes.ahk ui.html START.bat version.txt"
-
-:: Pliki konfiguracyjne (pobierane TYLKO jesli nie istnieja - nie nadpisujemy ustawien)
-set "PLIKI_CONFIG=coords.json"
+:: Plik konfiguracyjny NIE nadpisywany przy aktualizacji
+set "PLIK_CONFIG=coords.json"
 
 :: ============================================================
 ::  [1/4] SPRAWDZ PYTHON
@@ -57,42 +55,76 @@ python --version
 echo.
 
 :: ============================================================
-::  [2/4] POBIERZ PLIKI PROJEKTU
+::  [2/4] POBIERZ I ROZPAKUJ REPO (caly ZIP)
 :: ============================================================
 if "!FORCE!"=="1" (
-    echo  [2/4] Aktualizowanie plikow projektu z: %BASE_URL%
+    echo  [2/4] Pobieranie aktualnej wersji z GitHub...
 ) else (
-    echo  [2/4] Pobieranie brakujacych plikow z: %BASE_URL%
+    echo  [2/4] Pobieranie plikow programu z GitHub...
 )
 echo.
 
-:: --- Pliki projektu (w trybie FORCE zawsze pobierane, normalnie tylko brakujace) ---
-for %%F in (%PLIKI_UPDATE%) do (
-    if "!FORCE!"=="1" (
-        echo  [UPDATE] %%F ...
-        powershell -NoProfile -Command ^
-            "try { Invoke-WebRequest -Uri '%BASE_URL%/%%F' -OutFile '%%F' -UseBasicParsing -ErrorAction Stop; Write-Host '  [OK] Zaktualizowano: %%F' } catch { Write-Host '  [UWAGA] Nie udalo sie: %%F - ' $_.Exception.Message }"
-    ) else (
-        if not exist "%%F" (
-            echo  [NOWY] Pobieranie: %%F ...
-            powershell -NoProfile -Command ^
-                "try { Invoke-WebRequest -Uri '%BASE_URL%/%%F' -OutFile '%%F' -UseBasicParsing -ErrorAction Stop; Write-Host '  [OK] Pobrano: %%F' } catch { Write-Host '  [UWAGA] Nie udalo sie: %%F - ' $_.Exception.Message }"
+:: Usun stary ZIP i folder tymczasowy jesli istnieja
+if exist "_repo.zip"  del /f /q "_repo.zip"
+if exist "_repo_tmp"  rd /s /q "_repo_tmp"
+
+echo  Pobieranie repozytorium...
+powershell -NoProfile -Command ^
+    "try { Invoke-WebRequest -Uri '%REPO_ZIP%' -OutFile '_repo.zip' -UseBasicParsing -ErrorAction Stop; Write-Host '  [OK] Repo pobrane.' } catch { Write-Host '  [BLAD] ' $_.Exception.Message; exit 1 }"
+
+if not exist "_repo.zip" (
+    color 0C
+    echo.
+    echo  BLAD: Nie udalo sie pobrac repozytorium.
+    echo  Sprawdz polaczenie z internetem lub adres REPO_ZIP.
+    if "!FORCE!"=="0" pause
+    exit /b 1
+)
+
+echo  Rozpakowywanie...
+powershell -NoProfile -Command ^
+    "Expand-Archive -Path '_repo.zip' -DestinationPath '_repo_tmp' -Force"
+
+if not exist "_repo_tmp\%REPO_FOLDER%" (
+    color 0C
+    echo.
+    echo  BLAD: Nie mozna rozpakowac. Oczekiwano folderu: _repo_tmp\%REPO_FOLDER%
+    del /f /q "_repo.zip"
+    if "!FORCE!"=="0" pause
+    exit /b 1
+)
+
+:: Kopia zapasowa coords.json jesli istnieje
+if exist "%PLIK_CONFIG%" (
+    echo  [Kopia zapasowa] %PLIK_CONFIG% zachowany...
+    copy /y "%PLIK_CONFIG%" "%PLIK_CONFIG%.bak" >nul 2>&1
+)
+
+:: Skopiuj wszystkie pliki z repo (bez podfolderow .github)
+echo  Kopiowanie plikow programu...
+for %%F in ("_repo_tmp\%REPO_FOLDER%\*.py" "_repo_tmp\%REPO_FOLDER%\*.ahk" "_repo_tmp\%REPO_FOLDER%\*.html" "_repo_tmp\%REPO_FOLDER%\*.bat" "_repo_tmp\%REPO_FOLDER%\*.txt" "_repo_tmp\%REPO_FOLDER%\*.json") do (
+    for %%G in (%%F) do (
+        set "FNAME=%%~nxG"
+        :: Nie nadpisuj coords.json (ustawienia uzytkownika)
+        if /i "!FNAME!"=="coords.json" (
+            if not exist "coords.json" (
+                copy /y "%%G" "." >nul
+                echo    [NOWY] coords.json
+            ) else (
+                echo    [ZACHOWANY] coords.json
+            )
         ) else (
-            echo  [OK - juz istnieje] %%F
+            copy /y "%%G" "." >nul
+            echo    [OK] !FNAME!
         )
     )
 )
 
-:: --- Pliki konfiguracyjne (NIGDY nie nadpisujemy - zawieraja ustawienia uzytkownika) ---
-for %%F in (%PLIKI_CONFIG%) do (
-    if not exist "%%F" (
-        echo  [NOWY - konfiguracja] %%F ...
-        powershell -NoProfile -Command ^
-            "try { Invoke-WebRequest -Uri '%BASE_URL%/%%F' -OutFile '%%F' -UseBasicParsing -ErrorAction Stop; Write-Host '  [OK] Pobrano domyslna konfiguracje: %%F' } catch { Write-Host '  [UWAGA] Nie udalo sie: %%F' }"
-    ) else (
-        echo  [OK - zachowuje ustawienia] %%F
-    )
-)
+:: Sprzatanie
+del /f /q "_repo.zip"
+rd /s /q "_repo_tmp"
+echo.
+echo  [OK] Pliki skopiowane.
 echo.
 
 :: ============================================================
@@ -111,7 +143,7 @@ if not exist "!AHK_PATH!" (
     if exist "ahk_setup.exe" (
         echo.
         echo  Uruchamianie instalatora AutoHotkey v2...
-        echo  Postepuj zgodnie z instrukcjami, nastepnie program wróci tutaj.
+        echo  Postepuj zgodnie z instrukcjami, nastepnie program wroci tutaj.
         start /wait ahk_setup.exe
         del /f /q ahk_setup.exe 2>nul
         echo  [OK] AutoHotkey v2 zainstalowany.
