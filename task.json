@@ -1,0 +1,105 @@
+{
+  "jobId": "a0aed6f6-0e34-489d-ba05-f7af4e1f8f4a",
+  "nip": "242156325",
+  "invoiceNr": "202600961",
+  "invoiceDate": "26.02.2026",
+  "exePath": "",
+  "tolerance": 0.05,
+  "usdRate": 3.5792,
+  "currency": "USD",
+  "runMode": "attach",
+  "diagMode": false,
+  "items": [
+    {
+      "kod": "10048.01",
+      "nazwa": "Tape measure KOMELON 8mx25mm ECO",
+      "ilosc": 3.0,
+      "priceUSD": 4.135,
+      "pricePLN": 14.8
+    },
+    {
+      "kod": "11105.01",
+      "nazwa": "Tape measure FESTA Magnetic 5mx19mm",
+      "ilosc": 2.0,
+      "priceUSD": 1.888,
+      "pricePLN": 6.7575
+    },
+    {
+      "kod": "11325.01",
+      "nazwa": "Tape measure FESTA Magnet 5mx25mm",
+      "ilosc": 2.0,
+      "priceUSD": 2.841,
+      "pricePLN": 10.1685
+    },
+    {
+      "kod": "11425.01",
+      "nazwa": "Pendant 1 meter L 175S",
+      "ilosc": 5.0,
+      "priceUSD": 0.423,
+      "pricePLN": 1.514
+    },
+    {
+      "kod": "11445.01",
+      "nazwa": "Spirit level pendant",
+      "ilosc": 5.0,
+      "priceUSD": 0.284,
+      "pricePLN": 1.0165
+    },
+    {
+      "kod": "12250.01",
+      "nazwa": "Steel band FESTA 50mx10mm",
+      "ilosc": 1.0,
+      "priceUSD": 9.397,
+      "pricePLN": 33.6337
+    },
+    {
+      "kod": "13212.01",
+      "nazwa": "Marker permanent WESTBERG double-sided",
+      "ilosc": 12.0,
+      "priceUSD": 0.226,
+      "pricePLN": 0.8089
+    },
+    {
+      "kod": "17005.01",
+      "nazwa": "Side splitting pliers FESTA 180mm",
+      "ilosc": 4.0,
+      "priceUSD": 3.031,
+      "pricePLN": 10.8486
+    },
+    {
+      "kod": "17062.01",
+      "nazwa": "Pliers SIKO FESTA CrV 300mm",
+      "ilosc": 7.0,
+      "priceUSD": 7.241,
+      "pricePLN": 25.917
+    },
+    {
+      "kod": "19025.01",
+      "nazwa": "Hammer FESTA 500g FIBERGLASS",
+      "ilosc": 2.0,
+      "priceUSD": 3.29,
+      "pricePLN": 11.7756
+    },
+    {
+      "kod": "20493.01",
+      "nazwa": "Step drill WESTBERG HSS 7-40.5mm",
+      "ilosc": 3.0,
+      "priceUSD": 10.569,
+      "pricePLN": 37.8286
+    },
+    {
+      "kod": "38017.01",
+      "nazwa": "Gun for PUR foam FESTA Teflon",
+      "ilosc": 14.0,
+      "priceUSD": 8.102,
+      "pricePLN": 28.9987
+    },
+    {
+      "kod": "42172.01",
+      "nazwa": "Mesh square 16/1.2x1000mmx25m ZN",
+      "ilosc": 2.0,
+      "priceUSD": 58.358,
+      "pricePLN": 208.875
+    }
+  ]
+}

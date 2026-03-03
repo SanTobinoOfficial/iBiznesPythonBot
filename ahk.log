@@ -1,0 +1,46 @@
+﻿2026-02-26 20:03:19 [AHK] AutoHotkey bot uruchomiony
+2026-02-26 20:03:19 [AHK] Task: nip=124514111 faktura=202600961 pozycji=13
+2026-02-26 20:03:19 [AHK] === TRYB DIAGNOSTYCZNY ===
+2026-02-26 20:03:19 [AHK] Szukam okna Zakup...
+2026-02-26 20:03:19 [AHK] Okno znalezione. Kontrolki:
+2026-02-26 20:03:19 [AHK]   CTRL: Chrome_RenderWidgetHostHWND1 | text='Chrome Legacy Window'
+2026-02-26 20:03:19 [AHK]   CTRL: Intermediate D3D Window1 | text=''
+2026-02-26 20:23:58 [AHK] === AHK Bot v2.0 uruchomiony ===
+2026-02-26 20:23:58 [AHK] Task: nip=242156325 faktura=202600961 pozycji=13
+2026-02-26 20:23:58 [AHK] autoOpen=1 autoNav=1 delay=500
+2026-02-26 20:23:58 [AHK] === TRYB DIAGNOSTYCZNY ===
+2026-02-26 20:23:58 [AHK] --- DIAGNOSTYKA ---
+2026-02-26 20:23:58 [AHK] Wszystkie otwarte okna:
+2026-02-26 20:23:58 [AHK]   OKNO: 'iBiznes · Bot Zakupów v2 - Google Chrome' [Chrome_WidgetWin_1]
+2026-02-26 20:23:58 [AHK]   OKNO: 'firmatec i jeszcze 1 karta — Eksplorator plików' [CabinetWClass]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Zakup' [TFzakAdd]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Zakupy' [TFzak]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Faktura iBiznes ver. 2.0.26.9  Profesjonalna   [admin]' [TFOS]
+2026-02-26 20:23:58 [AHK]   OKNO: 'RSJ' [TApplication]
+2026-02-26 20:23:58 [AHK]   OKNO: 'iBiznesPythonBot i jeszcze 1 karta — Eksplorator plików' [CabinetWClass]
+2026-02-26 20:23:58 [AHK]   OKNO: 'README.md - iBiznesPythonBot - Visual Studio Code' [Chrome_WidgetWin_1]
+2026-02-26 20:23:58 [AHK]   OKNO: 'iBiznes Bot Serwer - python  server.py' [CASCADIA_HOSTING_WINDOW_CLASS]
+2026-02-26 20:23:58 [AHK]   OKNO: 'server.log — Notatnik' [Notepad]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Błąd instalacji iBiznes Bot' [Chrome_WidgetWin_1]
+2026-02-26 20:23:58 [AHK]   OKNO: 'iBiznes Bot Serwer - python  server.py' [CASCADIA_HOSTING_WINDOW_CLASS]
+2026-02-26 20:23:58 [AHK]   OKNO: 'iBiznes Bot Serwer - python  server.py' [CASCADIA_HOSTING_WINDOW_CLASS]
+2026-02-26 20:23:58 [AHK]   OKNO: 'VoicemodV3' [Qt683QWindowIcon]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Startup Manager' [TSMMsg]
+2026-02-26 20:23:58 [AHK]   OKNO: 'team slap battles - Discord' [Chrome_WidgetWin_1]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Niedostępny: files (1).zip (wersja testowa)' [WinRarWindow]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Medal' [Chrome_WidgetWin_1]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Monitor' [TForm_ResourceManage]
+2026-02-26 20:23:58 [AHK]   OKNO: 'NVIDIA GeForce Overlay' [CEF-OSC-WIDGET]
+2026-02-26 20:23:58 [AHK]   OKNO: 'Program Manager' [Progman]
+2026-02-26 20:23:58 [AHK] iBiznes nie jest uruchomiony!
+2026-02-26 20:23:58 [AHK] --- Koniec diagnostyki. Sprawdz ahk.log ---
+2026-02-26 20:24:30 [AHK] === AHK Bot v2.0 uruchomiony ===
+2026-02-26 20:24:30 [AHK] Task: nip=242156325 faktura=202600961 pozycji=13
+2026-02-26 20:24:30 [AHK] autoOpen=1 autoNav=1 delay=500
+2026-02-26 20:24:30 [AHK] BLAD: iBiznes nie jest otwarty i brak sciezki EXE
+2026-02-26 20:24:30 [AHK] result.json zapisany (0 pozycji).
+2026-02-26 20:24:45 [AHK] === AHK Bot v2.0 uruchomiony ===
+2026-02-26 20:24:45 [AHK] Task: nip=242156325 faktura=202600961 pozycji=13
+2026-02-26 20:24:45 [AHK] autoOpen=1 autoNav=1 delay=500
+2026-02-26 20:24:45 [AHK] BLAD: iBiznes nie jest otwarty i brak sciezki EXE
+2026-02-26 20:24:45 [AHK] result.json zapisany (0 pozycji).

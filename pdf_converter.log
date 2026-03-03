@@ -1,0 +1,68 @@
+2026-03-01 16:57:37,773 [INFO    ] Parsowanie: C:\Users\Tobiasz\Downloads\202600961.pdf
+2026-03-01 16:57:37,778 [INFO    ] Stron w PDF: 6
+2026-03-01 16:57:38,951 [INFO    ] Naglowek: faktura=202600961 dostawca=LEVIOR s.r.o.
+2026-03-01 16:57:38,976 [INFO    ]   Strona 1: 35 pozycji
+2026-03-01 16:57:39,471 [INFO    ]   Strona 2: 48 pozycji
+2026-03-01 16:57:39,977 [INFO    ]   Strona 3: 50 pozycji
+2026-03-01 16:57:40,521 [INFO    ]   Strona 4: 53 pozycji
+2026-03-01 16:57:40,932 [INFO    ]   Strona 5: 47 pozycji
+2026-03-01 16:57:41,183 [INFO    ]   Strona 6: 24 pozycji
+2026-03-01 16:57:41,183 [INFO    ] Lacznie pozycji (po dedup): 238
+2026-03-01 16:57:51,766 [INFO    ] Parsowanie: C:\Users\Tobiasz\Downloads\202600961.pdf
+2026-03-01 16:57:51,772 [INFO    ] Stron w PDF: 6
+2026-03-01 16:57:53,274 [INFO    ] Naglowek: faktura=202600961 dostawca=LEVIOR s.r.o.
+2026-03-01 16:57:53,322 [INFO    ]   Strona 1: 35 pozycji
+2026-03-01 16:57:53,967 [INFO    ]   Strona 2: 48 pozycji
+2026-03-01 16:57:54,417 [INFO    ]   Strona 3: 50 pozycji
+2026-03-01 16:57:54,862 [INFO    ]   Strona 4: 53 pozycji
+2026-03-01 16:57:55,314 [INFO    ]   Strona 5: 47 pozycji
+2026-03-01 16:57:55,578 [INFO    ]   Strona 6: 24 pozycji
+2026-03-01 16:57:55,578 [INFO    ] Lacznie pozycji (po dedup): 238
+2026-03-01 16:57:56,887 [INFO    ] Excel zapisany: C:\Users\Tobiasz\AppData\Local\Temp\tmpqu64nbbp.xlsx (238 pozycji)
+2026-03-01 16:58:55,240 [INFO    ] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://localhost:5000
+2026-03-01 16:58:55,240 [INFO    ] [33mPress CTRL+C to quit[0m
+2026-03-01 16:58:55,425 [INFO    ] 127.0.0.1 - - [01/Mar/2026 16:58:55] "GET / HTTP/1.1" 200 -
+2026-03-01 16:58:55,978 [INFO    ] 127.0.0.1 - - [01/Mar/2026 16:58:55] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-03-01 16:58:57,484 [INFO    ] 127.0.0.1 - - [01/Mar/2026 16:58:57] "GET /api/config HTTP/1.1" 200 -
+2026-03-01 16:58:58,206 [INFO    ] 127.0.0.1 - - [01/Mar/2026 16:58:58] "GET /api/rate?currency=usd HTTP/1.1" 200 -
+2026-03-01 16:58:58,214 [INFO    ] 127.0.0.1 - - [01/Mar/2026 16:58:58] "GET /api/ping HTTP/1.1" 200 -
+2026-03-01 16:59:24,103 [INFO    ] 127.0.0.1 - - [01/Mar/2026 16:59:24] "GET /api/history HTTP/1.1" 200 -
+2026-03-02 18:22:16,764 [INFO    ] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://localhost:5000
+2026-03-02 18:22:16,765 [INFO    ] [33mPress CTRL+C to quit[0m
+2026-03-02 18:22:17,135 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:22:17] "GET / HTTP/1.1" 200 -
+2026-03-02 18:22:17,579 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:22:17] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-03-02 18:22:18,485 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:22:18] "GET /api/config HTTP/1.1" 200 -
+2026-03-02 18:22:19,176 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:22:19] "GET /api/rate?currency=usd HTTP/1.1" 200 -
+2026-03-02 18:22:19,181 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:22:19] "GET /api/ping HTTP/1.1" 200 -
+2026-03-02 18:22:54,722 [INFO    ] Safe-convert upload: uploads\20260302_182254_202600961.pdf
+2026-03-02 18:22:54,723 [INFO    ] Parsowanie: uploads\20260302_182254_202600961.pdf
+2026-03-02 18:22:54,739 [INFO    ] Stron w PDF: 6
+2026-03-02 18:22:55,642 [INFO    ] Naglowek: faktura=202600961 dostawca=LEVIOR s.r.o.
+2026-03-02 18:22:55,652 [INFO    ]   Strona 1: 35 pozycji
+2026-03-02 18:22:55,984 [INFO    ]   Strona 2: 48 pozycji
+2026-03-02 18:22:56,315 [INFO    ]   Strona 3: 50 pozycji
+2026-03-02 18:22:56,640 [INFO    ]   Strona 4: 53 pozycji
+2026-03-02 18:22:56,957 [INFO    ]   Strona 5: 47 pozycji
+2026-03-02 18:22:57,126 [INFO    ]   Strona 6: 24 pozycji
+2026-03-02 18:22:57,126 [INFO    ] Lacznie pozycji (po dedup): 238
+2026-03-02 18:22:57,128 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:22:57] "[35m[1mPOST /api/safe-convert HTTP/1.1[0m" 500 -
+2026-03-02 18:24:22,937 [INFO    ] Safe-convert upload: uploads\20260302_182422_202600961.pdf
+2026-03-02 18:24:22,937 [INFO    ] Parsowanie: uploads\20260302_182422_202600961.pdf
+2026-03-02 18:24:22,952 [INFO    ] Stron w PDF: 6
+2026-03-02 18:24:23,873 [INFO    ] Naglowek: faktura=202600961 dostawca=LEVIOR s.r.o.
+2026-03-02 18:24:23,882 [INFO    ]   Strona 1: 35 pozycji
+2026-03-02 18:24:24,209 [INFO    ]   Strona 2: 48 pozycji
+2026-03-02 18:24:24,530 [INFO    ]   Strona 3: 50 pozycji
+2026-03-02 18:24:24,845 [INFO    ]   Strona 4: 53 pozycji
+2026-03-02 18:24:25,169 [INFO    ]   Strona 5: 47 pozycji
+2026-03-02 18:24:25,346 [INFO    ]   Strona 6: 24 pozycji
+2026-03-02 18:24:25,347 [INFO    ] Lacznie pozycji (po dedup): 238
+2026-03-02 18:24:25,418 [INFO    ] XLS iBiznes zapisany: uploads\20260302_182422_202600961_ibiznes.xls (238 pozycji)
+2026-03-02 18:24:25,418 [INFO    ] Safe-convert OK: uploads\20260302_182422_202600961_ibiznes.xls (238 pozycji, kurs=3.6056)
+2026-03-02 18:24:25,419 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:24:25] "POST /api/safe-convert HTTP/1.1" 200 -
+2026-03-02 18:24:28,421 [INFO    ] 127.0.0.1 - - [02/Mar/2026 18:24:28] "GET /api/download?path=uploads\\20260302_182422_202600961_ibiznes.xls HTTP/1.1" 200 -
+2026-03-02 20:55:24,938 [INFO    ] 127.0.0.1 - - [02/Mar/2026 20:55:24] "GET /api/history HTTP/1.1" 200 -
+2026-03-02 20:55:30,696 [INFO    ] 127.0.0.1 - - [02/Mar/2026 20:55:30] "GET /api/rate?currency=usd HTTP/1.1" 200 -
+2026-03-02 20:55:35,083 [INFO    ] 127.0.0.1 - - [02/Mar/2026 20:55:35] "GET /api/autodetect HTTP/1.1" 200 -
