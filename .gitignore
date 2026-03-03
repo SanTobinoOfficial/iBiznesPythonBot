@@ -1,0 +1,38 @@
+# Runtime / generowane przez bota
+*.log
+*.tmp
+task.json
+result.json
+_repo.zip
+_repo_tmp/
+_remote_ver.tmp
+
+# Instalacja
+_installed.flag
+_firstrun.flag
+
+# Konfiguracja użytkownika (NIE commituj)
+config.json
+history.json
+
+# Przesłane pliki
+uploads/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
+
+# Kopia zapasowa coords
+coords.json.bak

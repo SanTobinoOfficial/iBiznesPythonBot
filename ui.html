@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iBiznes · Bot Zakupów v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f12;--surface:#141720;--surface2:#1a1f2e;
+  --border:#252a35;--border2:#2f3747;
+  --accent:#f97316;--accent2:#22d3ee;--accent3:#a78bfa;
+  --ok:#22c55e;--warn:#eab308;--err:#ef4444;
+  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;
+  --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;
+  --r:6px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:28px 20px 80px}
+
+/* HEADER */
+header{display:flex;align-items:flex-end;gap:16px;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.logo-block{flex:1}
+.logo-label{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+.logo-title{font-family:var(--sans);font-size:26px;font-weight:800;line-height:1}
+.logo-title span{color:var(--accent)}
+.logo-version{font-size:10px;color:var(--muted);margin-left:8px}
+.usd-badge{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.usd-badge .lbl{font-size:10px;color:var(--muted);letter-spacing:.1em}
+.usd-badge .rate{font-family:var(--sans);font-size:20px;font-weight:700;color:var(--accent2);transition:color .3s}
+.usd-badge .rate.loading{color:var(--muted);animation:pulse 1.2s infinite}
+.status-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .3s}
+.dot.ok{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.dot.err{background:var(--err);box-shadow:0 0 6px var(--err)}
+.dot.busy{background:var(--warn);animation:pulse 1s infinite}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.tab-btn{padding:9px 18px;font-family:var(--mono);font-size:12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .2s;margin-bottom:-1px}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-color:var(--accent)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card-title{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;flex-shrink:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.grid-2{grid-template-columns:1fr}}
+
+/* FIELDS */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:13px;padding:8px 10px;transition:border-color .2s,box-shadow .2s;outline:none}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(249,115,22,.15)}
+.field input::placeholder{color:var(--muted)}
+.field input[type=checkbox]{width:auto;margin-right:6px;accent-color:var(--accent)}
+.field-row{display:flex;align-items:center;gap:8px}
+.field-row input{flex:1}
+.detect-btn{background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:var(--r);color:var(--accent);font-family:var(--mono);font-size:11px;padding:6px 10px;cursor:pointer;white-space:nowrap;transition:background .2s}
+.detect-btn:hover{background:rgba(249,115,22,.2)}
+.field .hint{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* SLIDER */
+.slider-row{display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer}
+.slider-val{min-width:52px;text-align:right;color:var(--accent);font-weight:700}
+
+/* DROP ZONE */
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(249,115,22,.05)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:26px;margin-bottom:5px}
+.drop-label{color:var(--muted);font-size:12px}
+.drop-label strong{color:var(--accent)}
+.drop-filename{color:var(--ok);font-size:12px;margin-top:5px;display:none}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r);border:none;font-family:var(--mono);font-size:12px;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .2s;font-weight:700}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{box-shadow:0 0 16px rgba(249,115,22,.4)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+.btn-danger{background:transparent;color:var(--err);border:1px solid var(--err)}
+.btn-danger:hover{background:rgba(239,68,68,.1)}
+.btn-cyan{background:rgba(34,211,238,.1);color:var(--accent2);border:1px solid rgba(34,211,238,.3)}
+.btn-cyan:hover{background:rgba(34,211,238,.2)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+/* STEPS */
+.steps{display:flex;margin-bottom:18px}
+.step{flex:1;text-align:center;padding:7px 4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);transition:all .3s}
+.step.active{color:var(--accent);border-color:var(--accent)}
+.step.done{color:var(--ok);border-color:var(--ok)}
+.step-num{display:block;font-family:var(--sans);font-size:15px;font-weight:800;line-height:1;margin-bottom:2px}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.stat-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center}
+.stat-box .n{font-family:var(--sans);font-size:24px;font-weight:800;line-height:1;margin-bottom:3px}
+.stat-box .l{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.stat-added .n{color:var(--ok)}
+.stat-skipped .n{color:var(--warn)}
+.stat-errors .n{color:var(--err)}
+.stat-rate .n{color:var(--accent2);font-size:16px}
+
+/* PROGRESS */
+.progress-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);height:7px;overflow:hidden;margin:6px 0}
+.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:var(--r);transition:width .4s ease}
+
+/* CONSOLE */
+.console{background:#080a0e;border:1px solid var(--border);border-radius:var(--r);padding:12px;height:240px;overflow-y:auto;font-size:11.5px;line-height:1.7;scroll-behavior:smooth}
+.console::-webkit-scrollbar{width:4px}
+.console::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.log-line{display:flex;gap:8px;animation:fadeIn .15s ease}
+.log-ts{color:var(--muted);flex-shrink:0}
+.log-msg{flex:1}
+.log-info .log-msg{color:var(--text)}
+.log-ok .log-msg{color:var(--ok)}
+.log-warn .log-msg{color:var(--warn)}
+.log-error .log-msg{color:var(--err)}
+.log-debug .log-msg{color:#475569}
+.log-accent .log-msg{color:var(--accent);font-weight:700}
+
+/* ALERTS TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--border)}
+.data-table td{padding:6px 10px;border-bottom:1px solid rgba(37,42,53,.6)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+.diff-high{color:var(--err);font-weight:700}
+.diff-med{color:var(--warn);font-weight:700}
+.code-cell{font-family:var(--mono);color:var(--accent2);font-weight:600}
+
+/* HISTORY */
+.history-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .2s}
+.history-item:hover{border-color:var(--border2)}
+.history-item.restore:hover{border-color:var(--accent)}
+.hi-nr{font-family:var(--sans);font-weight:700;color:var(--text);font-size:14px;flex:1}
+.hi-meta{font-size:11px;color:var(--muted)}
+.hi-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.hi-ok{background:rgba(34,197,94,.15);color:var(--ok);border:1px solid rgba(34,197,94,.3)}
+.hi-err{background:rgba(239,68,68,.15);color:var(--err);border:1px solid rgba(239,68,68,.3)}
+.hi-run{background:rgba(234,179,8,.15);color:var(--warn);border:1px solid rgba(234,179,8,.3)}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r);padding:10px 14px;max-width:300px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideIn .25s ease}
+.toast.ok{border-left-color:var(--ok)}
+.toast.warn{border-left-color:var(--warn)}
+.toast.err{border-left-color:var(--err)}
+
+/* MISC */
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(249,115,22,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+.refresh-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 3px;transition:color .2s,transform .3s}
+.refresh-btn:hover{color:var(--accent2)}
+.refresh-btn.spinning{animation:spin 1s linear infinite}
+.empty-state{text-align:center;padding:30px;color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-ok{background:rgba(34,197,94,.15);color:var(--ok);border:1px solid rgba(34,197,94,.3)}
+.badge-warn{background:rgba(234,179,8,.15);color:var(--warn);border:1px solid rgba(234,179,8,.3)}
+.badge-err{background:rgba(239,68,68,.15);color:var(--err);border:1px solid rgba(239,68,68,.3)}
+.section-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.section-header h3{font-family:var(--sans);font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em}
+.first-run-banner{background:linear-gradient(90deg,#f97316,#ea580c);color:#000;padding:10px 18px;font-family:var(--sans);font-weight:700;font-size:13px;display:flex;align-items:center;gap:10px;border-radius:var(--r);margin-bottom:16px}
+.first-run-banner button{margin-left:auto;background:rgba(0,0,0,.2);border:none;color:#000;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700}
+.preview-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.preview-table th{background:rgba(249,115,22,.08);padding:5px 10px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--border)}
+.preview-table td{padding:4px 10px;border-bottom:1px solid rgba(37,42,53,.5)}
+.preview-table .pln{color:var(--accent2)}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* PDF STATUS */
+.pdf-status{border-radius:var(--r);padding:10px 14px;font-size:12px;margin-top:10px;display:none;gap:10px;align-items:flex-start}
+.pdf-status.ok{display:flex;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.25)}
+.pdf-status.err{display:flex;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.25)}
+.pdf-status.loading{display:flex;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.25)}
+.pdf-info{flex:1}
+.pdf-info strong{color:var(--accent2);font-family:var(--sans)}
+.pdf-dl-row{display:flex;gap:7px;margin-top:6px;flex-wrap:wrap}
+.btn-sm{padding:4px 11px;font-size:11px;border-radius:4px;border:none;font-family:var(--mono);cursor:pointer;transition:opacity .15s}
+.btn-sm-csv{background:rgba(249,115,22,.15);color:var(--accent);border:1px solid rgba(249,115,22,.3)}
+.btn-sm-csv:hover{background:rgba(249,115,22,.25)}
+.btn-sm-xl{background:rgba(34,197,94,.15);color:var(--ok);border:1px solid rgba(34,197,94,.3)}
+.btn-sm-xl:hover{background:rgba(34,197,94,.25)}
+
+/* COORDS TABLE */
+.coord-input{width:76px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none;text-align:center}
+.coord-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(249,115,22,.15)}
+.coord-step{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(249,115,22,.2);color:var(--accent);font-size:11px;font-weight:700;flex-shrink:0}
+
+/* TRYB BEZPIECZNY – mode switcher */
+.mode-switcher{display:flex;gap:0;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:3px;margin-bottom:16px}
+.mode-btn{flex:1;padding:8px 14px;background:none;border:none;border-radius:calc(var(--r) - 2px);color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .2s;text-align:center}
+.mode-btn.active{background:var(--surface2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.mode-btn.safe.active{color:var(--accent3);background:rgba(167,139,250,.1)}
+/* TRYB BEZPIECZNY – convert card */
+.safe-convert-card{border-color:rgba(167,139,250,.3)}
+.safe-convert-card .card-title{color:var(--accent3)}
+.safe-convert-card .card-title::before{background:var(--accent3)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- FIRST RUN BANNER -->
+<div class="first-run-banner" id="firstRunBanner" style="display:none">
+  <span>🔍</span>
+  <span>PIERWSZE URUCHOMIENIE – Tryb diagnostyczny włączony. Otwórz iBiznes → okno Zakup → kliknij Uruchom bota.</span>
+  <button onclick="document.getElementById('firstRunBanner').style.display='none'">✕</button>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-block">
+    <div class="logo-label">Panel sterowania</div>
+    <div class="logo-title">i<span>Biznes</span> · Bot<span class="logo-version">v2.0</span></div>
+  </div>
+  <div class="usd-badge">
+    <div class="lbl">Kurs NBP <button class="refresh-btn" id="refreshRate">↻</button></div>
+    <div class="rate loading" id="usdRate">…</div>
+    <div style="font-size:10px;color:var(--muted)" id="rateDate"></div>
+  </div>
+  <div class="status-wrap">
+    <span class="dot" id="appDot"></span>
+    <span id="appStatus">Brak połączenia</span>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('bot')">▶ Bot</button>
+  <button class="tab-btn" onclick="switchTab('settings')">⚙ Ustawienia</button>
+  <button class="tab-btn" onclick="switchTab('history')">📋 Historia</button>
+  <button class="tab-btn" onclick="switchTab('alerts')">⚠ Alerty <span id="alertsBadge"></span></button>
+</div>
+
+<!-- ═══════════════════ TAB: BOT ═══════════════════ -->
+<div class="tab-pane active" id="tab-bot">
+
+  <div class="mode-switcher">
+    <button class="mode-btn active" id="modeNormal" onclick="switchMode('normal')">▶ Normalny (AHK)</button>
+    <button class="mode-btn safe"   id="modeSafe"   onclick="switchMode('safe')">🔒 TRYB BEZPIECZNY (→ XLS)</button>
+  </div>
+
+  <!-- ── TRYB BEZPIECZNY: konwersja do XLS ── -->
+  <div id="safeModeSection" style="display:none">
+    <div class="card safe-convert-card">
+      <div class="card-title">TRYB BEZPIECZNY · Konwersja PDF/CSV → Excel 2003</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px">
+        Wgraj plik PDF lub CSV – program wygeneruje plik <strong style="color:var(--accent3)">.xls</strong>
+        w formacie importu iBiznes (24 kolumny, bez nagłówków). Bez uruchamiania AHK.
+      </p>
+      <div class="drop-zone" id="safeDropZone">
+        <input type="file" id="safeFile" accept=".csv,.pdf">
+        <div class="drop-icon" id="safeDropIcon">📄</div>
+        <div class="drop-label">Przeciągnij plik <strong>PDF lub CSV</strong> albo kliknij</div>
+        <div class="drop-filename" id="safeDropFilename"></div>
+      </div>
+      <div class="field" style="margin-top:12px;max-width:200px">
+        <label>Waluta faktury</label>
+        <select id="safeCurrency">
+          <option value="USD">USD – Dolar</option>
+          <option value="EUR">EUR – Euro</option>
+          <option value="PLN">PLN – Złoty</option>
+          <option value="CZK">CZK – Korona czeska</option>
+        </select>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-primary" id="safeConvertBtn" disabled>🔄 Konwertuj do XLS</button>
+      </div>
+      <!-- wynik konwersji -->
+      <div id="safeConvertResult" style="display:none;margin-top:12px;padding:10px 14px;border-radius:var(--r);background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.25);font-size:12px">
+        <span id="safeConvertIcon">✅</span>
+        <span id="safeConvertText"></span>
+        <div style="margin-top:8px">
+          <button class="btn-sm" id="safeDownloadBtn" style="background:rgba(167,139,250,.15);color:var(--accent3);border:1px solid rgba(167,139,250,.3)">⬇ Pobierz iBiznes.xls</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NORMALNY ── -->
+  <div id="normalModeSection">
+
+  <div class="steps">
+    <div class="step active" id="step1"><span class="step-num">1</span>Faktura</div>
+    <div class="step"        id="step2"><span class="step-num">2</span>CSV</div>
+    <div class="step"        id="step3"><span class="step-num">3</span>Start</div>
+    <div class="step"        id="step4"><span class="step-num">4</span>Wyniki</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Krok 1 · Faktura</div>
+      <div class="field">
+        <label>NIP dostawcy</label>
+        <input type="text" id="nip" placeholder="np. 6197393900" maxlength="13">
+      </div>
+      <div class="field">
+        <label>Nazwa dostawcy</label>
+        <input type="text" id="supplier" placeholder="Auto z PDF lub wpisz ręcznie">
+        <div class="hint">Wpisywana przez bota w pole dostawcy w iBiznes</div>
+      </div>
+      <div class="field">
+        <label>Numer faktury</label>
+        <input type="text" id="invoiceNr" placeholder="np. 202600961">
+      </div>
+      <div class="field">
+        <label>Data faktury (DD.MM.RRRR)</label>
+        <input type="text" id="invoiceDate" placeholder="np. 23.02.2026">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Opcje · Ceny</div>
+      <div class="field">
+        <label>Tolerancja różnicy ceny (PLN)</label>
+        <div class="slider-row">
+          <input type="range" id="tolerance" min="0.01" max="2.00" step="0.01" value="0.05">
+          <span class="slider-val" id="tolVal">0.05 PLN</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Waluta faktury</label>
+        <select id="currency">
+          <option value="USD">USD – Dolar</option>
+          <option value="EUR">EUR – Euro</option>
+          <option value="PLN">PLN – Złoty</option>
+          <option value="CZK">CZK – Korona czeska</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tryb uruchomienia</label>
+        <select id="runMode">
+          <option value="auto">Auto (uruchom iBiznes jeśli zamknięty)</option>
+          <option value="attach">Podłącz do otwartej aplikacji</option>
+        </select>
+      </div>
+      <div class="field" style="margin-top:6px">
+        <label><input type="checkbox" id="diagMode"> Tryb diagnostyczny</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV / PDF -->
+  <div class="card">
+    <div class="card-title">Krok 2 · Import PDF / CSV</div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="csvFile" accept=".csv,.pdf">
+      <div class="drop-icon" id="dropIcon">📄</div>
+      <div class="drop-label">Przeciągnij plik <strong>PDF lub CSV</strong> albo kliknij</div>
+      <div class="drop-filename" id="dropFilename"></div>
+    </div>
+
+    <!-- PDF status (pokazuje się po sparsowaniu PDF) -->
+    <div class="pdf-status" id="pdfStatus">
+      <div style="font-size:18px" id="pdfStatusIcon">⏳</div>
+      <div class="pdf-info">
+        <div id="pdfStatusText">Przetwarzam PDF...</div>
+        <div class="pdf-dl-row" id="pdfDlRow" style="display:none">
+          <button class="btn-sm btn-sm-csv" id="dlCsvBtn">⬇ CSV</button>
+          <button class="btn-sm btn-sm-xl"  id="dlXlBtn">⬇ Excel (.xlsx)</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="genCsvBtn">⬇ Przykładowy CSV</button>
+      <span style="font-size:11px;color:var(--muted)">faktura 202600961 (LEVIOR)</span>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="card" id="csvPreview" style="display:none">
+    <div class="card-title">Podgląd CSV · <span id="csvCount">0</span> pozycji
+      <span style="margin-left:auto;font-weight:400;color:var(--muted);font-size:11px">kurs: <span id="previewRate">—</span></span>
+    </div>
+    <div style="overflow-x:auto;max-height:200px;overflow-y:auto">
+      <table class="preview-table" id="previewTable">
+        <thead><tr><th>Kod</th><th>Nazwa</th><th>Ilość</th><th>Cena</th><th>PLN ≈</th></tr></thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- START -->
+  <div class="btn-row" style="margin-bottom:16px" id="normalStartRow">
+    <button class="btn btn-primary" id="startBtn" disabled>▶ &nbsp;Uruchom bota</button>
+    <button class="btn btn-danger" id="stopBtn" disabled>■ &nbsp;Stop</button>
+    <button class="btn btn-ghost" id="clearLogBtn">⌫ &nbsp;Wyczyść log</button>
+  </div>
+
+  <!-- STATS + PROGRESS -->
+  <div class="card">
+    <div class="card-title" id="runTitle">Status</div>
+    <div class="stats-row">
+      <div class="stat-box stat-added"><div class="n" id="cntAdded">0</div><div class="l">Dodano</div></div>
+      <div class="stat-box stat-skipped"><div class="n" id="cntSkipped">0</div><div class="l">Pominięto</div></div>
+      <div class="stat-box stat-errors"><div class="n" id="cntErrors">0</div><div class="l">Błędy</div></div>
+      <div class="stat-box stat-rate"><div class="n" id="cntRate">—</div><div class="l">Kurs</div></div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px">
+      <span id="progressLabel">Oczekiwanie...</span>
+      <span id="progressPct">0%</span>
+    </div>
+  </div>
+
+  <!-- CONSOLE -->
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span>Konsola</span>
+      <span id="logCount" style="font-size:10px;color:var(--muted);font-weight:400">0 wpisów</span>
+    </div>
+    <div class="console" id="console"></div>
+  </div>
+
+  </div><!-- /normalModeSection -->
+</div><!-- /tab-bot -->
+
+<!-- ═══════════════════ TAB: SETTINGS ═══════════════════ -->
+<div class="tab-pane" id="tab-settings">
+  <div class="card">
+    <div class="card-title">Ścieżki</div>
+    <div class="field">
+      <label>Ścieżka do iBiznes.exe</label>
+      <div class="field-row">
+        <input type="text" id="cfg_exePath" placeholder="C:\Program Files\iBiznes\iBiznes.exe">
+        <button class="detect-btn" onclick="detectPaths()">🔍 Wykryj</button>
+      </div>
+      <div class="hint" id="exePathHint"></div>
+    </div>
+    <div class="field">
+      <label>Ścieżka do AutoHotkey64.exe</label>
+      <div class="field-row">
+        <input type="text" id="cfg_ahkExePath" placeholder="C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe">
+      </div>
+      <div class="hint" id="ahkPathHint"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Automatyzacja</div>
+    <div class="grid-2">
+      <div>
+        <div class="field">
+          <label><input type="checkbox" id="cfg_autoOpen"> Automatycznie uruchom iBiznes</label>
+          <div class="hint">Jeśli iBiznes nie jest otwarty, bot go uruchomi</div>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="cfg_autoNav"> Automatycznie nawiguj do Zakup</label>
+          <div class="hint">Bot sam otworzy okno faktury zakupowej</div>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>Opóźnienie między krokami (ms)</label>
+          <input type="number" id="cfg_stepDelay" min="100" max="3000" step="100" value="500">
+          <div class="hint">Zwiększ jeśli iBiznes reaguje wolno</div>
+        </div>
+        <div class="field">
+          <label>Maks. liczba prób przy błędzie</label>
+          <input type="number" id="cfg_maxRetries" min="1" max="10" value="3">
+        </div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:4px">
+      <label>Ścieżka menu do okna Zakup</label>
+      <select id="cfg_menuPath" onchange="toggleCustomMenu()">
+        <option value="auto">Auto (próbuje wszystkie znane ścieżki)</option>
+        <option value="custom">Własna ścieżka menu</option>
+      </select>
+    </div>
+    <div class="field" id="customMenuField" style="display:none">
+      <label>Własna ścieżka menu (oddziel przecinkiem)</label>
+      <input type="text" id="cfg_customMenu" placeholder="np. Dokumenty,Zakupy,Nowy zakup">
+      <div class="hint">Przykład: "Dokumenty,Faktury zakupowe" lub "Zakupy,Nowa FZ"</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Wartości domyślne</div>
+    <div class="grid-2">
+      <div>
+        <div class="field">
+          <label>Domyślny NIP dostawcy</label>
+          <input type="text" id="cfg_defaultNIP" placeholder="np. 6197393900">
+        </div>
+        <div class="field">
+          <label>Domyślna waluta</label>
+          <select id="cfg_defaultCurrency">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="PLN">PLN</option>
+            <option value="CZK">CZK</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>Domyślna tolerancja ceny (PLN)</label>
+          <input type="number" id="cfg_tolerance" min="0.01" max="10" step="0.01" value="0.05">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="saveSettings()">💾 &nbsp;Zapisz ustawienia</button>
+    <button class="btn btn-cyan" onclick="detectPaths()">🔍 &nbsp;Wykryj ścieżki automatycznie</button>
+    <button class="btn btn-ghost" onclick="loadSettings()">↺ &nbsp;Odśwież</button>
+  </div>
+
+  <!-- KOORDYNATY -->
+  <div class="card" style="margin-top:18px">
+    <div class="card-title">Koordynaty iBiznes · coords.json</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px">
+      Absolutne współrzędne ekranu <strong style="color:var(--accent2)">(Screen X, Y)</strong> dla każdego kroku bota.
+      Ustaw kursor nad elementem w iBiznes → odczytaj koordynaty z <strong>WindowSpy</strong>
+      (prawy przycisk myszy na ikonę AutoHotkey w zasobniku systemowym → WindowSpy).
+    </p>
+    <table class="data-table" style="margin-bottom:12px">
+      <thead>
+        <tr>
+          <th style="width:32px">Krok</th>
+          <th>Opis elementu</th>
+          <th style="width:90px;text-align:center">X</th>
+          <th style="width:90px;text-align:center">Y</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="coord-step">1</span></td>
+          <td style="color:var(--muted2)">Przycisk <strong style="color:var(--text)">"Zakup (...)"</strong></td>
+          <td><input class="coord-input" type="number" id="cx_btnZakup_x" value="256"></td>
+          <td><input class="coord-input" type="number" id="cx_btnZakup_y" value="77"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">2</span></td>
+          <td style="color:var(--muted2)">Nowy dokument <strong style="color:var(--text)">(lewy panel)</strong></td>
+          <td><input class="coord-input" type="number" id="cx_btnNewDoc_x" value="72"></td>
+          <td><input class="coord-input" type="number" id="cx_btnNewDoc_y" value="172"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">3</span></td>
+          <td style="color:var(--muted2)">Pole <strong style="color:var(--text)">dostawcy</strong></td>
+          <td><input class="coord-input" type="number" id="cx_supplierField_x" value="256"></td>
+          <td><input class="coord-input" type="number" id="cx_supplierField_y" value="157"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">4</span></td>
+          <td style="color:var(--muted2)">Zakładka <strong style="color:var(--text)">Pozycje</strong></td>
+          <td><input class="coord-input" type="number" id="cx_tabPositions_x" value="67"></td>
+          <td><input class="coord-input" type="number" id="cx_tabPositions_y" value="313"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">5</span></td>
+          <td style="color:var(--muted2)">Przycisk <strong style="color:var(--text)">F7 – Dodaj z Kartoteki</strong></td>
+          <td><input class="coord-input" type="number" id="cx_btnF7_x" value="420"></td>
+          <td><input class="coord-input" type="number" id="cx_btnF7_y" value="117"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveCoords()">💾 Zapisz koordynaty</button>
+      <button class="btn btn-ghost" onclick="loadCoords()">↺ Odśwież</button>
+    </div>
+    <div class="hint" style="margin-top:10px">
+      💡 Jak znaleźć koordynaty: Uruchom iBiznes → kliknij prawym myszą na ikonę AHK w zasobniku →
+      <strong>WindowSpy</strong> → najedź kursorem na element → odczytaj wartości <em>Screen X, Y</em>.
+      Po przesunięciu lub zmianie rozdzielczości monitora koordynaty należy zaktualizować.
+    </div>
+  </div>
+
+</div><!-- /tab-settings -->
+
+<!-- ═══════════════════ TAB: HISTORY ═══════════════════ -->
+<div class="tab-pane" id="tab-history">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div style="font-family:var(--sans);font-size:13px;color:var(--muted2)">Ostatnie faktury (max 50)</div>
+    <div class="btn-row" style="margin:0">
+      <button class="btn btn-ghost" onclick="loadHistory()">↺ Odśwież</button>
+      <button class="btn btn-danger" onclick="clearHistory()">🗑 Wyczyść</button>
+    </div>
+  </div>
+  <div id="historyList"><div class="empty-state">Brak historii faktur.</div></div>
+</div>
+
+<!-- ═══════════════════ TAB: ALERTS ═══════════════════ -->
+<div class="tab-pane" id="tab-alerts">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div style="font-family:var(--sans);font-size:13px;color:var(--muted2)">Produkty z niezgodną ceną</div>
+    <div class="btn-row" style="margin:0">
+      <button class="btn btn-danger" onclick="clearAlerts()">🗑 Wyczyść alerty</button>
+    </div>
+  </div>
+  <div class="card" id="alertsCard" style="display:none">
+    <div style="overflow-x:auto">
+      <table class="data-table" id="alertTable">
+        <thead><tr><th>Kod</th><th>Nazwa</th><th>Faktura PLN</th><th>System PLN</th><th>Różnica</th><th>Czas</th></tr></thead>
+        <tbody id="alertBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="empty-state" id="alertsEmpty">Brak alertów cenowych.</div>
+</div>
+
+</div><!-- /shell -->
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ── STATE ──────────────────────────────────────────────────── */
+const S = {
+  usdRate: null, csvData: [], running: false, aborted: false,
+  logLines: 0, added: 0, skipped: 0, errors: 0, alertCount: 0,
+  config: {},
+  pdfCsvPath: null, pdfExcelPath: null,
+  origCsvData: [],    // kopia oryginalna dla "Przywróć"
+};
+const API = 'http://localhost:5000';
+const $ = id => document.getElementById(id);
+
+/* ── TABS ───────────────────────────────────────────────────── */
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  $(`tab-${name}`).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const map = {bot:0, settings:1, history:2, alerts:3};
+  if (map[name] !== undefined) btns[map[name]].classList.add('active');
+  if (name === 'history') loadHistory();
+  if (name === 'settings') loadCoords();
+}
+
+/* ── TOAST ──────────────────────────────────────────────────── */
+function toast(msg, type='info', ms=3500) {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  $('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+/* ── LOG ────────────────────────────────────────────────────── */
+function log(msg, level='info') {
+  const el = document.createElement('div');
+  el.className = `log-line log-${level}`;
+  const ts = new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.innerHTML = `<span class="log-ts">${ts}</span><span class="log-msg">${msg}</span>`;
+  $('console').appendChild(el);
+  $('console').scrollTop = $('console').scrollHeight;
+  S.logLines++;
+  $('logCount').textContent = `${S.logLines} wpisów`;
+}
+
+/* ── RATE ───────────────────────────────────────────────────── */
+async function fetchRate(currency='USD') {
+  const el = $('usdRate'), btn = $('refreshRate');
+  el.classList.add('loading');
+  btn.classList.add('spinning');
+  el.textContent = '…';
+  const curr = currency.toLowerCase();
+  try {
+    const r = await fetch(`${API}/api/rate?currency=${curr}`, {signal: AbortSignal.timeout(5000)});
+    if (r.ok) {
+      const d = await r.json();
+      S.usdRate = d.rate;
+      updateRateDisplay(d.rate, d.date, currency);
+      return d.rate;
+    }
+  } catch(_) {}
+  try {
+    if (curr === 'pln') { S.usdRate=1; updateRateDisplay(1,'—',currency); return 1; }
+    const r = await fetch(`https://api.nbp.pl/api/exchangerates/rates/a/${curr}/?format=json`);
+    const d = await r.json();
+    S.usdRate = d.rates[0].mid;
+    updateRateDisplay(d.rates[0].mid, d.rates[0].effectiveDate, currency);
+    return S.usdRate;
+  } catch(e) {
+    el.textContent = 'BŁĄD'; el.classList.remove('loading'); btn.classList.remove('spinning');
+    return null;
+  }
+}
+
+function updateRateDisplay(rate, date, currency) {
+  $('usdRate').textContent = rate.toFixed(4) + ' PLN';
+  $('usdRate').classList.remove('loading');
+  $('refreshRate').classList.remove('spinning');
+  $('rateDate').textContent = `${currency}/PLN · ${date}`;
+  $('cntRate').textContent = rate.toFixed(4);
+  $('previewRate').textContent = `1 ${currency} = ${rate.toFixed(4)} PLN`;
+  if (S.csvData.length) renderPreview();
+  log(`Kurs ${currency}/PLN: ${rate.toFixed(4)} [${date}]`, 'ok');
+}
+
+/* ── CONFIG ─────────────────────────────────────────────────── */
+async function loadSettings() {
+  try {
+    const r = await fetch(`${API}/api/config`, {signal: AbortSignal.timeout(3000)});
+    if (!r.ok) return;
+    const cfg = await r.json();
+    S.config = cfg;
+    $('cfg_exePath').value        = cfg.exePath        || '';
+    $('cfg_ahkExePath').value     = cfg.ahkExePath      || '';
+    $('cfg_autoOpen').checked     = !!cfg.autoOpenIBiznes;
+    $('cfg_autoNav').checked      = !!cfg.autoNavigateZakup;
+    $('cfg_stepDelay').value      = cfg.stepDelay       || 500;
+    $('cfg_maxRetries').value     = cfg.maxRetries      || 3;
+    $('cfg_menuPath').value       = cfg.ibiznesMenuPath || 'auto';
+    $('cfg_customMenu').value     = cfg.customMenuPath  || '';
+    $('cfg_defaultNIP').value     = cfg.defaultNIP      || '';
+    $('cfg_defaultCurrency').value= cfg.defaultCurrency || 'USD';
+    $('cfg_tolerance').value      = cfg.tolerance       || 0.05;
+    toggleCustomMenu();
+
+    // Apply saved defaults to bot form
+    if (cfg.defaultNIP && !$('nip').value)        $('nip').value = cfg.defaultNIP;
+    if (cfg.defaultCurrency) $('currency').value  = cfg.defaultCurrency;
+    if (cfg.tolerance)       { $('tolerance').value = cfg.tolerance; $('tolVal').textContent = parseFloat(cfg.tolerance).toFixed(2)+' PLN'; }
+    if (cfg.lastInvoiceDate) $('invoiceDate').value = cfg.lastInvoiceDate;
+    if (cfg.runMode)         $('runMode').value     = cfg.runMode;
+
+    // Update exe path hint
+    if (cfg.exePath) $('exePathHint').textContent = '✓ Znaleziono: ' + cfg.exePath;
+    if (cfg.ahkExePath) $('ahkPathHint').textContent = '✓ Znaleziono: ' + cfg.ahkExePath;
+
+  } catch(_) {}
+}
+
+async function saveSettings() {
+  const cfg = {
+    exePath:           $('cfg_exePath').value.trim(),
+    ahkExePath:        $('cfg_ahkExePath').value.trim(),
+    autoOpenIBiznes:   $('cfg_autoOpen').checked,
+    autoNavigateZakup: $('cfg_autoNav').checked,
+    stepDelay:         parseInt($('cfg_stepDelay').value) || 500,
+    maxRetries:        parseInt($('cfg_maxRetries').value) || 3,
+    ibiznesMenuPath:   $('cfg_menuPath').value,
+    customMenuPath:    $('cfg_customMenu').value.trim(),
+    defaultNIP:        $('cfg_defaultNIP').value.trim(),
+    defaultCurrency:   $('cfg_defaultCurrency').value,
+    tolerance:         parseFloat($('cfg_tolerance').value) || 0.05,
+    runMode:           $('runMode').value,
+  };
+  try {
+    const r = await fetch(`${API}/api/config`, {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg)});
+    if (r.ok) { toast('Ustawienia zapisane.', 'ok'); S.config = cfg; }
+    else toast('Błąd zapisu ustawień.', 'err');
+  } catch(e) {
+    toast('Serwer niedostępny – ustawienia zapisane lokalnie.', 'warn');
+  }
+  // Apply to bot form
+  $('currency').value  = cfg.defaultCurrency;
+  $('tolerance').value = cfg.tolerance;
+  $('tolVal').textContent = cfg.tolerance.toFixed(2)+' PLN';
+}
+
+async function detectPaths() {
+  toast('Wykrywam ścieżki...', 'info', 2000);
+  try {
+    const r = await fetch(`${API}/api/autodetect`, {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.ibiznes) {
+      $('cfg_exePath').value = d.ibiznes;
+      $('exePathHint').textContent = '✓ Auto-wykryto: ' + d.ibiznes;
+      toast('Znaleziono iBiznes: ' + d.ibiznes, 'ok');
+    } else {
+      $('exePathHint').textContent = '✗ Nie znaleziono – wpisz ścieżkę ręcznie';
+      toast('iBiznes nie znaleziony automatycznie.', 'warn');
+    }
+    if (d.ahk) {
+      $('cfg_ahkExePath').value = d.ahk;
+      $('ahkPathHint').textContent = '✓ Auto-wykryto: ' + d.ahk;
+    }
+  } catch(e) {
+    toast('Serwer niedostępny.', 'err');
+  }
+}
+
+function toggleCustomMenu() {
+  $('customMenuField').style.display = $('cfg_menuPath').value === 'custom' ? 'block' : 'none';
+}
+
+/* ── HISTORY ────────────────────────────────────────────────── */
+async function loadHistory() {
+  try {
+    const r = await fetch(`${API}/api/history`, {signal: AbortSignal.timeout(3000)});
+    if (!r.ok) return;
+    const history = await r.json();
+    const el = $('historyList');
+    if (!history.length) {
+      el.innerHTML = '<div class="empty-state">Brak historii faktur.</div>';
+      return;
+    }
+    el.innerHTML = history.map(h => {
+      const badgeCls = h.status === 'done' ? 'hi-ok' : h.status === 'error' ? 'hi-err' : 'hi-run';
+      const badgeLbl = h.status === 'done' ? `+${h.added||0} / ⚠${h.skipped||0}` : h.status === 'error' ? 'Błąd' : 'W toku';
+      const dt = h.startedAt ? new Date(h.startedAt).toLocaleString('pl-PL') : '';
+      return `<div class="history-item restore" onclick="restoreFromHistory(${JSON.stringify(h).replace(/"/g,'&quot;')})">
+        <div>
+          <div class="hi-nr">${h.invoiceNr || '—'}</div>
+          <div class="hi-meta">NIP: ${h.nip||'—'} · ${h.items||0} poz. · ${h.currency||''} · ${dt}</div>
+        </div>
+        <span class="hi-badge ${badgeCls}">${badgeLbl}</span>
+        <span title="Przywróć" style="color:var(--muted);font-size:18px">↩</span>
+      </div>`;
+    }).join('');
+  } catch(_) {
+    $('historyList').innerHTML = '<div class="empty-state">Serwer niedostępny.</div>';
+  }
+}
+
+function restoreFromHistory(h) {
+  if (h.invoiceNr) $('invoiceNr').value = h.invoiceNr;
+  if (h.nip)       $('nip').value       = h.nip;
+  if (h.currency)  $('currency').value  = h.currency;
+  switchTab('bot');
+  toast('Przywrócono dane faktury ' + h.invoiceNr, 'ok');
+  validateForm();
+}
+
+async function clearHistory() {
+  if (!confirm('Wyczyścić historię faktur?')) return;
+  await fetch(`${API}/api/history/clear`, {method:'POST'});
+  loadHistory();
+  toast('Historia wyczyszczona.', 'ok');
+}
+
+/* ── ALERTS ─────────────────────────────────────────────────── */
+function addAlertRow(kod, nazwa, invPLN, sysPLN) {
+  S.alertCount++;
+  const diff = Math.abs(invPLN - sysPLN);
+  const cls  = diff > 1 ? 'diff-high' : 'diff-med';
+  const ts   = new Date().toLocaleTimeString('pl-PL');
+  const tr   = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="code-cell">${kod}</td>
+    <td style="color:var(--muted)">${nazwa}</td>
+    <td style="text-align:right">${invPLN.toFixed(4)}</td>
+    <td style="text-align:right">${sysPLN.toFixed(4)}</td>
+    <td style="text-align:right" class="${cls}">Δ ${diff.toFixed(4)}</td>
+    <td style="color:var(--muted)">${ts}</td>`;
+  $('alertBody').appendChild(tr);
+  $('alertsCard').style.display = 'block';
+  $('alertsEmpty').style.display = 'none';
+  $('alertsBadge').innerHTML = ` <span class="badge badge-warn">${S.alertCount}</span>`;
+}
+
+async function clearAlerts() {
+  await fetch(`${API}/api/alerts/clear`, {method:'POST'}).catch(()=>{});
+  $('alertBody').innerHTML = '';
+  $('alertsCard').style.display = 'none';
+  $('alertsEmpty').style.display = 'block';
+  S.alertCount = 0;
+  $('alertsBadge').innerHTML = '';
+  toast('Alerty wyczyszczone.', 'ok');
+}
+
+/* ── CSV ────────────────────────────────────────────────────── */
+function parseCSV(text) {
+  const lines  = text.trim().split('\n').map(l=>l.trim()).filter(Boolean);
+  const header = lines[0].toLowerCase().split(',').map(h=>h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    header.forEach((h,j) => obj[h] = (vals[j]||'').trim());
+    return obj;
+  });
+}
+
+function renderPreview() {
+  const rate = S.usdRate || 1;
+  const currency = $('currency').value;
+  const tbody = $('previewBody');
+  tbody.innerHTML = '';
+  S.csvData.forEach(row => {
+    const price   = parseFloat(row.cena_netto_usd || row.cena_netto || 0);
+    const pricePLN = currency === 'PLN' ? price : (price * rate);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="code-cell">${row.kod_produktu||''}</td>
+      <td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.nazwa||''}</td>
+      <td style="text-align:right">${parseFloat(row.ilosc||0).toFixed(0)}</td>
+      <td style="text-align:right">${price.toFixed(4)} ${currency}</td>
+      <td style="text-align:right" class="pln">${pricePLN.toFixed(4)}</td>`;
+    tbody.appendChild(tr);
+  });
+  $('csvCount').textContent  = S.csvData.length;
+  $('csvPreview').style.display = 'block';
+  setStep(2);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  $('dropFilename').textContent = `✓ ${file.name}`;
+  $('dropFilename').style.display = 'block';
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    $('dropIcon').textContent = '📑';
+    log(`PDF wgrany: ${file.name} – parsuję przez serwer...`, 'info');
+    uploadPDF(file);
+    return;
+  }
+  $('dropIcon').textContent = '📊';
+  const reader = new FileReader();
+  reader.onload = e => {
+    S.csvData     = parseCSV(e.target.result);
+    S.origCsvData = JSON.parse(JSON.stringify(S.csvData));
+    log(`CSV: ${S.csvData.length} pozycji (${file.name})`, 'ok');
+    renderPreview();
+    validateForm();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function uploadPDF(file) {
+  const ps = $('pdfStatus');
+  ps.className = 'pdf-status loading';
+  $('pdfStatusIcon').textContent = '⏳';
+  $('pdfStatusText').innerHTML = `<span class="spinner"></span> Parsuję <strong>${file.name}</strong>...`;
+  $('pdfDlRow').style.display = 'none';
+
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const r = await fetch(`${API}/api/pdf-upload`, {method:'POST', body:form, signal:AbortSignal.timeout(60000)});
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || `HTTP ${r.status}`);
+
+    // Załaduj pozycje
+    S.csvData     = d.items || [];
+    S.origCsvData = JSON.parse(JSON.stringify(S.csvData));
+    S.pdfCsvPath   = d.csvPath   || null;
+    S.pdfExcelPath = d.excelPath || null;
+
+    // Auto-uzupełnij pola faktury z nagłówka PDF
+    const hdr = d.header || {};
+    if (hdr.invoice_nr && !$('invoiceNr').value) $('invoiceNr').value = hdr.invoice_nr;
+    if (hdr.date)       { $('invoiceDate').value = hdr.date.replace(/\//g,'.'); }
+    if (hdr.currency)   { $('currency').value = hdr.currency; fetchRate(hdr.currency); }
+    if (hdr.supplier)   { $('supplier').value = hdr.supplier; }
+
+    // Status OK
+    const warns = d.errors && d.errors.length ? ` <span style="color:var(--warn)">⚠ ${d.errors.length} ostrzeżeń</span>` : '';
+    ps.className = 'pdf-status ok';
+    $('pdfStatusIcon').textContent = '✅';
+    $('pdfStatusText').innerHTML =
+      `<strong>${S.csvData.length} pozycji</strong> sparsowanych z faktury` +
+      (hdr.invoice_nr ? ` <span style="color:var(--accent2)">${hdr.invoice_nr}</span>` : '') +
+      (hdr.supplier   ? ` · ${hdr.supplier.slice(0,30)}` : '') + warns;
+    $('pdfDlRow').style.display = 'flex';
+
+    // Przyciski pobierania
+    $('dlCsvBtn').onclick = () => {
+      if (S.pdfCsvPath) window.location = `${API}/api/download?path=${encodeURIComponent(S.pdfCsvPath)}`;
+    };
+    $('dlXlBtn').onclick = () => {
+      if (S.pdfExcelPath) window.location = `${API}/api/download?path=${encodeURIComponent(S.pdfExcelPath)}`;
+      else toast('Excel niedostępny – zainstaluj: pip install openpyxl', 'warn', 5000);
+    };
+    if (!S.pdfExcelPath) $('dlXlBtn').style.opacity = '0.4';
+
+    log(`PDF: ${S.csvData.length} pozycji · faktura ${hdr.invoice_nr||'?'} · ${hdr.currency||'?'}`, 'ok');
+    renderPreview();
+    validateForm();
+    toast(`PDF sparsowany: ${S.csvData.length} pozycji`, 'ok');
+  } catch(e) {
+    ps.className = 'pdf-status err';
+    $('pdfStatusIcon').textContent = '❌';
+    $('pdfStatusText').innerHTML = `Błąd: <strong>${e.message}</strong> – sprawdź czy serwer działa i PDF to faktura LEVIOR/FESTA.`;
+    log(`Błąd PDF: ${e.message}`, 'error');
+    toast('Błąd parsowania PDF', 'err', 6000);
+  }
+}
+
+/* ── COORDS ─────────────────────────────────────────────────── */
+const COORD_KEYS = ['btnZakup','btnNewDoc','supplierField','tabPositions','btnF7'];
+
+async function loadCoords() {
+  try {
+    const r = await fetch(`${API}/api/coords`, {signal: AbortSignal.timeout(3000)});
+    if (!r.ok) return;
+    const coords = await r.json();
+    COORD_KEYS.forEach(key => {
+      const c = coords[key];
+      if (!c) return;
+      const xEl = $(`cx_${key}_x`), yEl = $(`cx_${key}_y`);
+      if (xEl && c.x !== undefined) xEl.value = c.x;
+      if (yEl && c.y !== undefined) yEl.value = c.y;
+    });
+  } catch(_) {}
+}
+
+async function saveCoords() {
+  const coords = {
+    '_comment': 'Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.'
+  };
+  COORD_KEYS.forEach(key => {
+    coords[key] = {
+      x: parseInt($(`cx_${key}_x`).value) || 0,
+      y: parseInt($(`cx_${key}_y`).value) || 0,
+    };
+  });
+  try {
+    const r = await fetch(`${API}/api/coords`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(coords), signal: AbortSignal.timeout(5000)
+    });
+    if (r.ok) toast('Koordynaty zapisane w coords.json.', 'ok');
+    else toast('Błąd zapisu koordynatów.', 'err');
+  } catch(e) {
+    toast('Serwer niedostępny.', 'err');
+  }
+}
+
+/* ── TRYB BEZPIECZNY ────────────────────────────────────────── */
+let S_safeFile = null;
+
+function switchMode(mode) {
+  const isNormal = mode === 'normal';
+  $('modeNormal').classList.toggle('active', isNormal);
+  $('modeSafe').classList.toggle('active', !isNormal);
+  $('normalModeSection').style.display = isNormal ? 'block' : 'none';
+  $('safeModeSection').style.display   = isNormal ? 'none'  : 'block';
+}
+
+async function runSafeConvert() {
+  if (!S_safeFile) return;
+  const btn = $('safeConvertBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Konwertuję...';
+  $('safeConvertResult').style.display = 'none';
+
+  const form = new FormData();
+  form.append('file', S_safeFile);
+  form.append('currency', $('safeCurrency').value);
+  if (S.usdRate) form.append('rate', S.usdRate);
+
+  try {
+    const r = await fetch(`${API}/api/safe-convert`, {method:'POST', body:form, signal:AbortSignal.timeout(30000)});
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || `HTTP ${r.status}`);
+
+    $('safeConvertIcon').textContent = '✅';
+    $('safeConvertText').innerHTML =
+      `Wygenerowano <strong>${d.filename}</strong> · ${d.items} pozycji · kurs ${d.rate?.toFixed(4)} PLN/${d.currency}`;
+    $('safeDownloadBtn').onclick = () => {
+      window.location = `${API}${d.downloadUrl}`;
+    };
+    $('safeConvertResult').style.display = 'block';
+    toast(`Gotowe: ${d.items} pozycji → ${d.filename}`, 'ok', 5000);
+  } catch(e) {
+    $('safeConvertIcon').textContent = '❌';
+    $('safeConvertText').innerHTML = `Błąd: <strong>${e.message}</strong>`;
+    $('safeConvertResult').style.display = 'block';
+    toast('Błąd konwersji: ' + e.message, 'err', 7000);
+  }
+  btn.disabled = false;
+  btn.textContent = '🔄 Konwertuj do XLS';
+}
+
+function validateForm() {
+  const ok = $('nip').value.trim().length >= 9 &&
+             $('invoiceNr').value.trim().length > 0 &&
+             S.csvData.length > 0 && S.usdRate !== null;
+  $('startBtn').disabled = !ok;
+  return ok;
+}
+
+function setStep(n) {
+  for (let i=1;i<=4;i++) {
+    const s = $(`step${i}`);
+    s.classList.remove('active','done');
+    if(i<n) s.classList.add('done');
+    if(i===n) s.classList.add('active');
+  }
+}
+
+function updateStats(added, skipped, errors, progress, label) {
+  $('cntAdded').textContent   = added;
+  $('cntSkipped').textContent = skipped;
+  $('cntErrors').textContent  = errors;
+  $('progressBar').style.width = `${progress}%`;
+  $('progressPct').textContent = `${Math.round(progress)}%`;
+  if(label) $('progressLabel').textContent = label;
+}
+
+function setAppStatus(status) {
+  const dot = $('appDot'), lbl = $('appStatus');
+  const map = {idle:['','Oczekiwanie'], running:['busy','Działanie...'],
+               connected:['ok','Połączono'], error:['err','Błąd'], done:['ok','Zakończono']};
+  const [cls, text] = map[status] || ['','—'];
+  dot.className = `dot ${cls}`;
+  lbl.textContent = text;
+}
+
+/* ── SSE ────────────────────────────────────────────────────── */
+let evtSource = null;
+function startSSE(jobId) {
+  if(evtSource) evtSource.close();
+  evtSource = new EventSource(`${API}/api/stream/${jobId}`);
+  evtSource.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data);
+      if(d.type==='log')    log(d.msg, d.level||'info');
+      if(d.type==='stats')  updateStats(d.added, d.skipped, d.errors, d.progress, d.label);
+      if(d.type==='alert')  addAlertRow(d.kod, d.nazwa, d.invPLN, d.sysPLN);
+      if(d.type==='done')   onJobDone(d);
+      if(d.type==='status') setAppStatus(d.status);
+    } catch(_) {}
+  };
+  evtSource.onerror = () => {
+    evtSource.close();
+    if(S.running) { log('Utracono połączenie.','error'); finishRun(false); }
+  };
+}
+
+/* ── START / STOP ───────────────────────────────────────────── */
+async function startBot() {
+  if(!validateForm()) return;
+  S.running=true; S.aborted=false;
+  $('startBtn').disabled=true; $('stopBtn').disabled=false;
+  setAppStatus('running'); setStep(3);
+
+  // Auto-save last used values to config
+  const partialCfg = {
+    lastNIP:         $('nip').value.trim(),
+    lastInvoiceNr:   $('invoiceNr').value.trim(),
+    lastInvoiceDate: $('invoiceDate').value.trim(),
+    runMode:         $('runMode').value,
+  };
+  fetch(`${API}/api/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(partialCfg)}).catch(()=>{});
+
+  const payload = {
+    nip:         $('nip').value.trim(),
+    supplier:    $('supplier').value.trim(),
+    invoiceNr:   $('invoiceNr').value.trim(),
+    invoiceDate: $('invoiceDate').value.trim(),
+    exePath:     S.config.exePath || '',
+    tolerance:   parseFloat($('tolerance').value),
+    currency:    $('currency').value,
+    usdRate:     S.usdRate,
+    diagMode:    $('diagMode').checked,
+    runMode:     $('runMode').value,
+    data:        S.csvData,
+  };
+
+  log('══ START ══════════════════════════════════════', 'accent');
+  log(`NIP: ${payload.nip} | Faktura: ${payload.invoiceNr} | Kurs: ${S.usdRate?.toFixed(4)} PLN`);
+  log(`Tryb: ${payload.runMode} | Tolerancja: ${payload.tolerance} PLN`);
+
+  try {
+    const resp = await fetch(`${API}/api/start`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload), signal:AbortSignal.timeout(8000)
+    });
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const {jobId} = await resp.json();
+    log(`Zadanie: ${jobId.slice(0,8)}...`, 'ok');
+    startSSE(jobId);
+  } catch(e) {
+    log(`Błąd połączenia z serwerem: ${e.message}`, 'error');
+    log('Uruchom: python server.py', 'warn');
+    toast('Serwer niedostępny. Uruchom server.py', 'err', 6000);
+    finishRun(false);
+  }
+}
+
+function onJobDone(d) {
+  log(`══ ZAKOŃCZONO: +${d.added} dodano | ${d.skipped} alertów | ${d.errors} błędów ══`, 'accent');
+  if(d.success!==false) toast(`✓ +${d.added} dodano, ${d.skipped} alertów`, 'ok', 5000);
+  else toast(`Zakończono z błędami (${d.errors})`, 'warn', 5000);
+  setAppStatus(d.errors>0?'error':'done');
+  finishRun(true); setStep(4);
+  $('runTitle').textContent = `Wyniki · ${new Date().toLocaleTimeString('pl-PL')}`;
+  if(S.alertCount>0) $('alertsBadge').innerHTML = ` <span class="badge badge-warn">${S.alertCount}</span>`;
+}
+
+function finishRun(success) {
+  S.running=false;
+  $('startBtn').disabled=false; $('stopBtn').disabled=true;
+  if(evtSource){evtSource.close();evtSource=null;}
+}
+
+function generateSampleCSV() {
+  const rows=[['10048.01','Tape measure KOMELON 8mx25mm ECO',3,4.135],['11105.01','Tape measure FESTA Magnetic 5mx19mm',2,1.888],['11325.01','Tape measure FESTA Magnet 5mx25mm',2,2.841],['11425.01','Pendant 1 meter L 175S',5,0.423],['11445.01','Spirit level pendant',5,0.284],['12250.01','Steel band FESTA 50mx10mm',1,9.397],['13212.01','Marker permanent WESTBERG double-sided',12,0.226],['17005.01','Side splitting pliers FESTA 180mm',4,3.031],['17062.01','Pliers SIKO FESTA CrV 300mm',7,7.241],['19025.01','Hammer FESTA 500g FIBERGLASS',2,3.290],['20493.01','Step drill WESTBERG HSS 7-40.5mm',3,10.569],['38017.01','Gun for PUR foam FESTA Teflon',14,8.102],['42172.01','Mesh square 16/1.2x1000mmx25m ZN',2,58.358]];
+  const csv='kod_produktu,nazwa,ilosc,cena_netto_usd\n'+rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='faktura_202600961.csv'; a.click();
+  log('Wygenerowano przykładowy CSV.','ok');
+  toast('CSV pobrany.','ok');
+}
+
+/* ── EVENT LISTENERS ────────────────────────────────────────── */
+$('tolerance').addEventListener('input', () => {
+  $('tolVal').textContent = parseFloat($('tolerance').value).toFixed(2)+' PLN';
+});
+['nip','invoiceNr'].forEach(id => $(id).addEventListener('input', validateForm));
+$('csvFile').addEventListener('change', e => handleFile(e.target.files[0]));
+$('currency').addEventListener('change', async () => {
+  await fetchRate($('currency').value);
+  renderPreview();
+  validateForm();
+});
+$('refreshRate').addEventListener('click', async () => { await fetchRate($('currency').value); });
+$('startBtn').addEventListener('click', startBot);
+$('stopBtn').addEventListener('click', async () => {
+  S.aborted=true;
+  try { await fetch(`${API}/api/stop`,{method:'POST',signal:AbortSignal.timeout(2000)}); } catch(_){}
+  log('⏹ Zatrzymano.','warn'); toast('Zatrzymano.','warn'); finishRun(false);
+});
+$('clearLogBtn').addEventListener('click', () => { $('console').innerHTML=''; S.logLines=0; $('logCount').textContent='0 wpisów'; });
+$('genCsvBtn').addEventListener('click', generateSampleCSV);
+
+// TRYB BEZPIECZNY – drop zone i przycisk konwersji
+(function() {
+  function handleSafeFile(file) {
+    if (!file) return;
+    S_safeFile = file;
+    $('safeDropFilename').textContent = `✓ ${file.name}`;
+    $('safeDropFilename').style.display = 'block';
+    $('safeDropIcon').textContent = file.name.toLowerCase().endsWith('.pdf') ? '📑' : '📊';
+    $('safeConvertBtn').disabled = false;
+    $('safeConvertResult').style.display = 'none';
+  }
+  $('safeFile').addEventListener('change', e => handleSafeFile(e.target.files[0]));
+  const sdz = $('safeDropZone');
+  ['dragenter','dragover'].forEach(ev => sdz.addEventListener(ev, e => { e.preventDefault(); sdz.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(ev => sdz.addEventListener(ev, e => {
+    e.preventDefault(); sdz.classList.remove('dragover');
+    if (ev === 'drop') handleSafeFile(e.dataTransfer.files[0]);
+  }));
+  $('safeConvertBtn').addEventListener('click', runSafeConvert);
+})();
+
+const dz=$('dropZone');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('dragover')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('dragover');if(ev==='drop')handleFile(e.dataTransfer.files[0])}));
+
+/* ── INIT ───────────────────────────────────────────────────── */
+(async () => {
+  log('iBiznes Bot v2.0 gotowy.', 'accent');
+  setAppStatus('idle');
+
+  // first run param
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('diag')==='1') {
+    $('diagMode').checked=true; $('runMode').value='attach';
+    $('firstRunBanner').style.display='flex';
+    log('★ PIERWSZE URUCHOMIENIE – tryb diagnostyczny włączony.', 'accent');
+    log('  Otwórz iBiznes → okno Zakup → wypełnij formularz → Uruchom.', 'warn');
+    toast('Pierwsze uruchomienie – tryb diagnostyczny!', 'ok', 7000);
+  }
+
+  // Set today's date
+  const today = new Date();
+  $('invoiceDate').value = today.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  // Load config + rate + coords
+  await loadSettings();
+  await loadCoords();
+  await fetchRate($('currency').value);
+  validateForm();
+
+  // Check server
+  try {
+    const r = await fetch(`${API}/api/ping`,{signal:AbortSignal.timeout(2000)});
+    if(r.ok) { setAppStatus('connected'); log('✓ Połączono z serwerem Flask.','ok'); }
+  } catch(_) {
+    log('⚠ Serwer niedostępny. Uruchom: python server.py', 'warn');
+  }
+})();
+</script>
+</body>
+</html>
