@@ -1,0 +1,8 @@
+{
+  "_comment": "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",
+  "btnZakup":      {"x": 256, "y":  77},
+  "btnNewDoc":     {"x":  72, "y": 172},
+  "supplierField": {"x": 256, "y": 157},
+  "tabPositions":  {"x":  67, "y": 313},
+  "btnF7":         {"x": 420, "y": 117}
+}
