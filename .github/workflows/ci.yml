@@ -30,7 +30,15 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - uses: actions/checkout@v4
       - name: Auto-merge PR v2.0 → main
-        run: gh pr merge --merge --auto 1
+        run: |
+          PR=$(gh pr list --head v2.0 --base main --state open --json number --jq '.[0].number')
+          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
+            echo "Enabling auto-merge on PR #$PR"
+            gh pr merge "$PR" --merge --auto
+          else
+            echo "No open PR from v2.0 to main found, skipping auto-merge"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
