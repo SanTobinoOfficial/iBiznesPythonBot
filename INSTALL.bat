@@ -102,21 +102,24 @@ if exist "%PLIK_CONFIG%" (
 
 :: Skopiuj wszystkie pliki z repo (bez podfolderow .github)
 echo  Kopiowanie plikow programu...
-for %%F in ("_repo_tmp\%REPO_FOLDER%\*.py" "_repo_tmp\%REPO_FOLDER%\*.ahk" "_repo_tmp\%REPO_FOLDER%\*.html" "_repo_tmp\%REPO_FOLDER%\*.bat" "_repo_tmp\%REPO_FOLDER%\*.txt" "_repo_tmp\%REPO_FOLDER%\*.json") do (
-    for %%G in (%%F) do (
-        set "FNAME=%%~nxG"
-        :: Nie nadpisuj coords.json (ustawienia uzytkownika)
-        if /i "!FNAME!"=="coords.json" (
-            if not exist "coords.json" (
-                copy /y "%%G" "." >nul
-                echo    [NOWY] coords.json
-            ) else (
-                echo    [ZACHOWANY] coords.json
-            )
+for %%E in (py ahk html bat txt md) do (
+    for /f "delims=" %%F in ('dir /b "_repo_tmp\%REPO_FOLDER%\*.%%E" 2^>nul') do (
+        copy /y "_repo_tmp\%REPO_FOLDER%\%%F" "." >nul 2>&1
+        echo    [OK] %%F
+    )
+)
+:: Pliki JSON – kopiuj wszystkie OPROCZ coords.json (zachowaj ustawienia uzytkownika)
+for /f "delims=" %%F in ('dir /b "_repo_tmp\%REPO_FOLDER%\*.json" 2^>nul') do (
+    if /i "%%F"=="coords.json" (
+        if not exist "coords.json" (
+            copy /y "_repo_tmp\%REPO_FOLDER%\%%F" "." >nul 2>&1
+            echo    [NOWY] %%F
         ) else (
-            copy /y "%%G" "." >nul
-            echo    [OK] !FNAME!
+            echo    [ZACHOWANY] %%F
         )
+    ) else (
+        copy /y "_repo_tmp\%REPO_FOLDER%\%%F" "." >nul 2>&1
+        echo    [OK] %%F
     )
 )
 

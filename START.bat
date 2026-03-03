@@ -1,5 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
+cd /d "%~dp0"
 title iBiznes Bot
 color 0A
 echo.
@@ -127,8 +128,32 @@ if not exist "server.py" (
 ::  [5] URUCHOM SERWER FLASK
 :: ============================================================
 echo  Uruchamiam serwer Flask...
-start "iBiznes Bot Serwer" cmd /k "color 0A && echo. && echo  Serwer: http://localhost:5000 && echo  Nie zamykaj tego okna! && echo. && python server.py"
-timeout /t 3 /nobreak >nul
+start /d "%~dp0" "iBiznes Bot Serwer" cmd /k "color 0A && echo. && echo  iBiznes Bot Serwer && echo  Adres: http://localhost:5000 && echo  Nie zamykaj tego okna! && echo. && python server.py || (color 0C && echo. && echo  BLAD: Serwer nie uruchomil sie! && echo  Sprawdz czy Python i biblioteki sa zainstalowane. && echo  Uruchom INSTALL.bat aby naprawic. && pause)"
+
+:: Czekaj az serwer wystartuje (max 15 sekund)
+echo  Czekam na uruchomienie serwera...
+set SERVER_READY=0
+for /l %%i in (1,1,15) do (
+    if "!SERVER_READY!"=="0" (
+        powershell -NoProfile -Command "try { $r = Invoke-WebRequest http://localhost:5000 -UseBasicParsing -TimeoutSec 1 -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
+        if !errorlevel! equ 0 (
+            set SERVER_READY=1
+            echo  [OK] Serwer uruchomiony!
+        ) else (
+            timeout /t 1 /nobreak >nul
+        )
+    )
+)
+
+if "!SERVER_READY!"=="0" (
+    color 0C
+    echo.
+    echo  UWAGA: Serwer nie odpowiada po 15 sekundach.
+    echo  Sprawdz okno "iBiznes Bot Serwer" czy sa bledy.
+    echo.
+    pause
+    exit /b 1
+)
 
 :: ============================================================
 ::  [6] OTWORZ PANEL W PRZEGLADARCE
@@ -146,7 +171,7 @@ if exist "_firstrun.flag" (
 )
 
 echo.
-echo  Nie zamykaj okna "iBiznes Bot Serwer"!
+echo  Program uruchomiony! Nie zamykaj okna "iBiznes Bot Serwer".
 echo.
-timeout /t 5 /nobreak >nul
+timeout /t 3 /nobreak >nul
 exit
