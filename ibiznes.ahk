@@ -92,6 +92,8 @@ try {
     LogMsg("=== Krok 5: F7 – Dodaj z Kartoteki ===")
     Send("{F7}")
     Sleep(1000)
+    WinActivate("ahk_exe iBiznes.exe")
+    Sleep(200)
 
     ; 7. Pętla F3 – dodaj każdą pozycję
     LogMsg("=== Krok 6: Pętla F3 – " items.Length " pozycji ===")
@@ -126,7 +128,7 @@ try {
 
     ; Obsługa ewentualnego dialogu potwierdzenia
     Sleep(500)
-    if WinExist("ahk_class #32770") {
+    if WinExist("ahk_class #32770 ahk_exe iBiznes.exe") {
         Send("{Enter}")
         LogMsg("Dialog potwierdzony.")
         Sleep(500)
