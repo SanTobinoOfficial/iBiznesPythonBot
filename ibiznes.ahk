@@ -2,39 +2,43 @@
 ;  ibiznes.ahk  –  AutoHotkey v2  –  Automatyzacja faktur zakupowych
 ;  Wywoływany przez server.py:  AutoHotkey64.exe ibiznes.ahk task.json
 ;  Tryb: klikanie absolutnych pikseli (koordynaty z coords.json)
+;  v3.0 – dane w %APPDATA%\iBiznesBot\
 ; ============================================================================
 
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-; ── STAŁE ─────────────────────────────────────────────────────────────────
-RESULT_FILE  := "result.json"
-LOG_FILE     := "ahk.log"
-COORDS_FILE  := "coords.json"
+; ── ŚCIEŻKI DANYCH (APPDATA) ──────────────────────────────────────────────
+global DataDir    := A_AppData . "\iBiznesBot"
+global TaskFile   := DataDir . "\task.json"
+global ResultFile := DataDir . "\result.json"
+global CoordsFile := DataDir . "\coords.json"
+global LogFile    := DataDir . "\ahk.log"
 
 ; ── INICJALIZACJA ──────────────────────────────────────────────────────────
 global ResultItems := []
-global AhkLog      := FileOpen(LOG_FILE, "a", "UTF-8")
+global AhkLog      := FileOpen(LogFile, "a", "UTF-8")
 global Coords      := Map()
 
-LogMsg("AutoHotkey bot uruchomiony")
+LogMsg("AutoHotkey bot uruchomiony (v3.0)")
 
-taskFile := (A_Args.Length >= 1) ? A_Args[1] : "task.json"
+; Plik zadania – z argumentu lub domyślny w APPDATA
+taskFilePath := (A_Args.Length >= 1) ? A_Args[1] : TaskFile
 
-if !FileExist(taskFile) {
-    LogMsg("BŁĄD: Nie znaleziono pliku: " taskFile)
+if !FileExist(taskFilePath) {
+    LogMsg("BŁĄD: Nie znaleziono pliku: " taskFilePath)
     WriteResult(false, "task.json nie znaleziony")
     ExitApp(1)
 }
 
-taskJson := FileRead(taskFile, "UTF-8")
+taskJson := FileRead(taskFilePath, "UTF-8")
 task     := JSON.parse(taskJson)
 
-nip      := task["nip"]
+nip       := task["nip"]
 invoiceNr := task["invoiceNr"]
-supplier := task.Has("supplier") ? task["supplier"] : nip
-exePath  := task["exePath"]
-items    := task["items"]
+supplier  := task.Has("supplier") ? task["supplier"] : nip
+exePath   := task["exePath"]
+items     := task["items"]
 
 LogMsg("Task wczytany: nip=" nip " faktura=" invoiceNr " dostawca=" supplier " pozycji=" items.Length)
 
@@ -151,13 +155,13 @@ ExitApp(0)
 
 ; ─── WCZYTAJ KOORDYNATY ───────────────────────────────────────────────────
 LoadCoords() {
-    global Coords, COORDS_FILE
-    if !FileExist(COORDS_FILE) {
+    global Coords, CoordsFile
+    if !FileExist(CoordsFile) {
         LogMsg("OSTRZEŻENIE: coords.json nie znaleziony – klikanie niemożliwe")
         return
     }
     try {
-        raw    := FileRead(COORDS_FILE, "UTF-8")
+        raw    := FileRead(CoordsFile, "UTF-8")
         parsed := JSON.parse(raw)
         for key, val in parsed {
             if (key != "_comment")
@@ -205,7 +209,7 @@ AddResult(kod, nazwa, ilosc, success, msg) {
 }
 
 WriteResult(success, errorMsg) {
-    global ResultItems, RESULT_FILE
+    global ResultItems, ResultFile
 
     items := []
     for item in ResultItems {
@@ -226,8 +230,8 @@ WriteResult(success, errorMsg) {
         "items",   items,
     )
 
-    try FileDelete(RESULT_FILE)
-    FileAppend(JSON.stringify(result), RESULT_FILE, "UTF-8-RAW")
+    try FileDelete(ResultFile)
+    FileAppend(JSON.stringify(result), ResultFile, "UTF-8-RAW")
     LogMsg("Zapisano result.json (" items.Length " pozycji).")
 }
 

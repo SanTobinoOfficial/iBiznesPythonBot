@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ v2.0, main ]
+    branches: [ v3.0, main ]
   pull_request:
     branches: [ main ]
 
@@ -17,28 +17,28 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install flask flask-cors pdfplumber openpyxl pandas xlwt
+        run: pip install flask flask-cors pdfplumber openpyxl pandas xlwt requests
 
       - name: Syntax check
-        run: python -m py_compile server.py pdf_to_csv.py
+        run: python -m py_compile main.py server.py pdf_to_csv.py
 
   auto-merge:
     needs: syntax-check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/v2.0'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v3.0'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - name: Auto-merge PR v2.0 → main
+      - name: Auto-merge PR v3.0 → main
         run: |
-          PR=$(gh pr list --head v2.0 --base main --state open --json number --jq '.[0].number')
+          PR=$(gh pr list --head v3.0 --base main --state open --json number --jq '.[0].number')
           if [ -n "$PR" ] && [ "$PR" != "null" ]; then
             echo "Enabling auto-merge on PR #$PR"
             gh pr merge "$PR" --merge --auto
           else
-            echo "No open PR from v2.0 to main found, skipping auto-merge"
+            echo "No open PR from v3.0 to main found, skipping auto-merge"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

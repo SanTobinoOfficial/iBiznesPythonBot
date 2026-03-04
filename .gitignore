@@ -3,13 +3,6 @@
 *.tmp
 task.json
 result.json
-_repo.zip
-_repo_tmp/
-_remote_ver.tmp
-
-# Instalacja
-_installed.flag
-_firstrun.flag
 
 # Konfiguracja użytkownika (NIE commituj)
 config.json
@@ -27,6 +20,15 @@ __pycache__/
 venv/
 *.egg-info/
 
+# PyInstaller build artifacts
+dist/
+build/
+*.spec.bak
+
+# Inno Setup – zawartość app/ generowana przez build.bat
+installer/app/
+dist/installer/
+
 # IDE
 .vscode/
 .idea/
@@ -36,3 +38,10 @@ venv/
 
 # Kopia zapasowa coords
 coords.json.bak
+
+# v2.x – nie potrzebne w v3.0
+_repo.zip
+_repo_tmp/
+_remote_ver.tmp
+_installed.flag
+_firstrun.flag
