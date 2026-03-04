@@ -1,10 +1,13 @@
 ; ============================================================================
-;  setup.iss  –  Inno Setup 6  –  iBiznes Bot v3.0 Installer
+;  setup.iss  –  Inno Setup 6.1+  –  iBiznes Bot v3.0 Installer
 ;  Kompilacja: iscc setup.iss  (lub Inno Setup Compiler GUI)
 ;  Wynik: dist\installer\iBiznesBot-Setup-v3.0.0.exe
 ;
 ;  Wymaga: folderu app\ obok tego pliku (wypełniony przez build.bat)
-;  Pobierz Inno Setup: https://jrsoftware.org/isinfo.php
+;  Pobierz Inno Setup 6.1+: https://jrsoftware.org/isinfo.php
+;
+;  UWAGA: NIE wymaga zewnętrznych pluginów (IDP itp.)
+;  Pobieranie AHK działa przez wbudowany CreateDownloadPage (Inno Setup 6.1+)
 ; ============================================================================
 
 #define AppName      "iBiznes Bot"
@@ -35,8 +38,6 @@ SolidCompression=yes
 WizardStyle=modern
 ; Minimalna wersja Windows (10)
 MinVersion=10.0
-; Nie pokazuj ReadMe – w razie potrzeby odkomentuj:
-; InfoAfterFile=..\README.md
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#AppExeName}
 
@@ -58,12 +59,12 @@ Name: "{group}\Odinstaluj {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Run]
-; Zainstaluj AutoHotkey v2 jeśli nie ma
+; Zainstaluj AutoHotkey v2 jeśli został pobrany (plik w {tmp}\ahk-v2.exe)
 Filename: "{tmp}\ahk-v2.exe"; \
   Parameters: "/S"; \
   StatusMsg: "Instalowanie AutoHotkey v2..."; \
   Flags: waituntilterminated skipifsilent; \
-  Check: not FileExists('{#AhkExePath}')
+  Check: FileExists(ExpandConstant('{tmp}\ahk-v2.exe'))
 
 ; Uruchom program po instalacji
 Filename: "{app}\{#AppExeName}"; \
@@ -78,20 +79,64 @@ Filename: "taskkill"; Parameters: "/f /im {#AppExeName}"; Flags: runhidden; RunO
 Type: filesandordirs; Name: "{app}"
 
 [Code]
-// Pobierz instalator AutoHotkey v2 przed instalacją (jeśli brak)
-procedure InitializeWizard();
+// ─────────────────────────────────────────────────────────────────────────────
+// Pobieranie AutoHotkey v2 przez wbudowany Inno Setup Download Page
+// Nie wymaga zewnętrznych pluginów (IDP itp.)
+// Wymaga Inno Setup 6.1+
+// ─────────────────────────────────────────────────────────────────────────────
+
 var
-  AhkExists: Boolean;
+  DownloadPage: TDownloadWizardPage;
+
+procedure InitializeWizard();
 begin
-  AhkExists := FileExists(ExpandConstant('{#AhkExePath}'));
-  if not AhkExists then begin
-    // Pobierz ahk-v2.exe do folderu temp – zostanie zainstalowany w [Run]
-    idpAddFile('{#AhkInstUrl}', ExpandConstant('{tmp}\ahk-v2.exe'));
-    idpDownloadAfter(wpReady);
+  DownloadPage := CreateDownloadPage(
+    'Pobieranie AutoHotkey v2',
+    'Proszę czekać podczas pobierania AutoHotkey v2...',
+    nil
+  );
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  if CurPageID = wpReady then begin
+    if not FileExists(ExpandConstant('{#AhkExePath}')) then begin
+      DownloadPage.Clear;
+      DownloadPage.Add('{#AhkInstUrl}', 'ahk-v2.exe', '');
+      DownloadPage.Show;
+      try
+        try
+          DownloadPage.Download;
+        except
+          if DownloadPage.AbortedByUser then
+            MsgBox(
+              'Pobieranie AutoHotkey v2 zostało anulowane.' + #13#10 +
+              'Zainstaluj ręcznie po instalacji programu:' + #13#10 +
+              'https://www.autohotkey.com/',
+              mbInformation, MB_OK
+            )
+          else
+            MsgBox(
+              'Błąd pobierania AutoHotkey v2:' + #13#10 +
+              GetExceptionMessage + #13#10 + #13#10 +
+              'Zainstaluj ręcznie po instalacji programu:' + #13#10 +
+              'https://www.autohotkey.com/',
+              mbError, MB_OK
+            );
+          // Kontynuuj instalację nawet jeśli AHK się nie pobrało
+        end;
+      finally
+        DownloadPage.Hide;
+      end;
+    end;
   end;
 end;
 
-// Informacja o lokalizacji danych użytkownika
+// ─────────────────────────────────────────────────────────────────────────────
+// Informacja o lokalizacji danych użytkownika po instalacji
+// ─────────────────────────────────────────────────────────────────────────────
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   AppDataPath: String;

@@ -8,10 +8,40 @@ echo  iBiznes Bot v3.0 - Budowanie .exe
 echo  ====================================
 echo.
 
+:: Sprawdz czy Python jest dostepny
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo  BLAD: Python nie jest zainstalowany lub nie jest w PATH.
+    echo  Pobierz Python 3.9+ ze strony: https://www.python.org/
+    pause & exit /b 1
+)
+
+:: Sprawdz czy wymagane pliki istnieja
+if not exist "main.py" (
+    echo  BLAD: Nie znaleziono main.py – uruchom z folderu projektu.
+    pause & exit /b 1
+)
+if not exist "coords.json" (
+    echo  BLAD: Nie znaleziono coords.json – wymagany do bundlowania.
+    pause & exit /b 1
+)
+
 :: ── [1] Zainstaluj zaleznosci ──────────────────────────────────────────────
 echo  [1/3] Instalacja zaleznosci Python...
 pip install --upgrade pip --quiet
-pip install pyinstaller pywebview flask flask-cors requests pandas pdfplumber openpyxl xlwt Pillow pywin32
+pip install ^
+    pyinstaller ^
+    pywebview ^
+    pythonnet ^
+    flask ^
+    flask-cors ^
+    requests ^
+    pandas ^
+    numpy ^
+    pdfplumber ^
+    openpyxl ^
+    xlwt ^
+    pywin32
 
 if %errorlevel% neq 0 (
     echo  BLAD: Instalacja zaleznosci nie powiodla sie.
@@ -41,9 +71,15 @@ echo  ============================================
 echo  Gotowe! dist\iBiznesBot\iBiznesBot.exe
 echo  ============================================
 echo.
-echo  Nastepny krok (opcjonalny):
-echo  Zainstaluj Inno Setup i uruchom:
-echo    iscc installer\setup.iss
-echo  lub otworz installer\setup.iss w Inno Setup Compiler
+echo  Nastepny krok – zbuduj instalator:
+echo.
+echo    Opcja A (linia polecen):
+echo      iscc installer\setup.iss
+echo.
+echo    Opcja B (GUI):
+echo      Otworz installer\setup.iss w Inno Setup Compiler
+echo      i kliknij Build ^> Compile
+echo.
+echo  Wynik: dist\installer\iBiznesBot-Setup-v3.0.0.exe
 echo.
 pause
