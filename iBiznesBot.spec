@@ -1,27 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
 # iBiznesBot.spec – PyInstaller spec dla iBiznes Bot v3.0
-# Budowanie: pyinstaller iBiznesBot.spec --clean --noconfirm
-
-from PyInstaller.utils.hooks import collect_all
-
-# Zbierz WSZYSTKIE pliki pywebview (DLL, data files, hidden imports)
-# – to jest wymagane, żeby pywebview działało po zbundlowaniu
-webview_datas, webview_binaries, webview_hiddenimports = collect_all('webview')
+# Budowanie: python -m PyInstaller iBiznesBot.spec --clean --noconfirm
+#
+# Używa flaskwebgui (Edge/Chrome w trybie app) zamiast pywebview.
+# Nie wymaga pythonnet ani .NET – działa na Pythonie 3.14+.
 
 block_cipher = None
 
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=webview_binaries,
+    binaries=[],
     datas=[
         # Bundlowane zasoby – kopiowane do katalogu _MEIPASS
         ('ibiznes.ahk', '.'),     # AHK script → kopiowany do APPDATA przy starcie
         ('ui.html',     '.'),     # Frontend → serwowany przez Flask
         ('coords.json', '.'),     # Domyślne koordynaty → kopiowane do APPDATA jeśli brak
         ('version.txt', '.'),     # Wersja
-        # Wszystkie pliki danych pywebview (JS, CSS, DLL itp.)
-        *webview_datas,
     ],
     hiddenimports=[
         # Flask + CORS
@@ -43,7 +38,7 @@ a = Analysis(
         'pdfminer.layout',
         'pdfminer.pdfpage',
         'pdfminer.pdfinterp',
-        # Data – numpy MUSI być, bo pandas go wymaga!
+        # Data – numpy MUSI być, bo pandas go wymaga
         'pandas',
         'pandas.core.frame',
         'pandas.core.series',
@@ -58,8 +53,8 @@ a = Analysis(
         'win32com',
         'pythoncom',
         'pywintypes',
-        # PyWebView – dodane przez collect_all powyżej
-        *webview_hiddenimports,
+        # flaskwebgui – okno Edge/Chrome w trybie app
+        'flaskwebgui',
     ],
     hookspath=[],
     hooksconfig={},

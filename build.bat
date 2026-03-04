@@ -32,10 +32,12 @@ if not exist "coords.json" (
 
 :: ── [1] Zainstaluj zaleznosci ──────────────────────────────────────────────
 echo  [1/3] Instalacja zaleznosci Python...
+echo  (flaskwebgui zamiast pywebview – nie wymaga .NET ani pythonnet)
+echo.
 python -m pip install --upgrade pip --quiet
 python -m pip install ^
     pyinstaller ^
-    pywebview ^
+    flaskwebgui ^
     flask ^
     flask-cors ^
     requests ^
