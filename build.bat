@@ -36,7 +36,6 @@ python -m pip install --upgrade pip --quiet
 python -m pip install ^
     pyinstaller ^
     pywebview ^
-    pythonnet ^
     flask ^
     flask-cors ^
     requests ^

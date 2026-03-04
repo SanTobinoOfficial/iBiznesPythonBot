@@ -50,11 +50,12 @@ a = Analysis(
         'numpy',
         'openpyxl',
         'xlwt',
-        # Windows
+        # Windows (pywin32)
         'winreg',
         'win32api',
         'win32con',
         'win32gui',
+        'win32com',
         'pythoncom',
         'pywintypes',
         # PyWebView – dodane przez collect_all powyżej
