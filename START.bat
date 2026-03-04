@@ -55,9 +55,7 @@ if not exist "%~dp0_installed.flag" (
     )
 
     echo.
-    :: UWAGA: cmd /c zamiast bezposredniego start – bardziej niezawodne dla .bat
-    ::         Nowy proces cmd, wiec INSTALL.bat moze nadpisac ten plik bez problemow
-    start /wait "iBiznes Bot - Instalacja" cmd /c ""%~dp0INSTALL.bat""
+    start /wait "" "%~dp0INSTALL.bat"
 
     :: Sprawdz czy instalacja sie powiodla
     if not exist "%~dp0_installed.flag" (
@@ -124,9 +122,7 @@ if exist "_remote_ver.tmp" (
         echo  Aktualizowanie plikow programu...
         echo  (coords.json z ustawieniami NIE jest nadpisywany)
         echo.
-        :: UWAGA: cmd /c zamiast bezposredniego start – bardziej niezawodne dla .bat
-        ::         Po aktualizacji restartujemy START.bat z SKIP_UPDATE
-        start /wait "iBiznes Bot - Aktualizacja" cmd /c ""%~dp0INSTALL.bat" FORCE"
+        start /wait "" "%~dp0INSTALL.bat" FORCE
         echo  Aktualizacja zakonczona. Restartuje program...
         start "" "%~f0" SKIP_UPDATE
         exit /b 0
