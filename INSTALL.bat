@@ -1,5 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
+:: Ustaw katalog roboczy na lokalizacje tego pliku – niezaleznie od tego
+:: skad zostal uruchomiony (przez START.bat, cmd /c, dwuklik itp.)
+cd /d "%~dp0"
 
 :: ============================================================
 ::  Tryb: normalny (instalacja) lub FORCE/UPDATE (aktualizacja)
