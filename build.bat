@@ -13,8 +13,12 @@ python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo  BLAD: Python nie jest zainstalowany lub nie jest w PATH.
     echo  Pobierz Python 3.9+ ze strony: https://www.python.org/
+    echo  Upewnij sie ze zaznaczyles "Add Python to PATH" podczas instalacji.
     pause & exit /b 1
 )
+
+python --version
+echo.
 
 :: Sprawdz czy wymagane pliki istnieja
 if not exist "main.py" (
@@ -28,8 +32,8 @@ if not exist "coords.json" (
 
 :: ── [1] Zainstaluj zaleznosci ──────────────────────────────────────────────
 echo  [1/3] Instalacja zaleznosci Python...
-pip install --upgrade pip --quiet
-pip install ^
+python -m pip install --upgrade pip --quiet
+python -m pip install ^
     pyinstaller ^
     pywebview ^
     pythonnet ^
@@ -52,7 +56,7 @@ echo.
 :: ── [2] Buduj .exe przez PyInstaller ───────────────────────────────────────
 echo  [2/3] Budowanie iBiznesBot.exe (PyInstaller)...
 echo  To moze zajac kilka minut...
-pyinstaller iBiznesBot.spec --clean --noconfirm
+python -m PyInstaller iBiznesBot.spec --clean --noconfirm
 
 if %errorlevel% neq 0 (
     echo  BLAD: PyInstaller zakonczyl sie bledem.
