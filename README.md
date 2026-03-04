@@ -6,7 +6,7 @@ elementy iBiznes, wpisując kody produktów i ilości. Posiada też **TRYB BEZPI
 konwersję PDF/CSV do pliku Excel 2003 (.xls) gotowego do ręcznego importu.
 
 Od **v3.0** program dystrybuowany jest jako **plik wykonywalny .exe** z własnym
-oknem (HTML UI wbudowany) oraz **instalatorem Windows**.
+oknem aplikacji (HTML UI wbudowany w Edge/Chrome, bez osobnej przeglądarki).
 
 ---
 
@@ -32,19 +32,20 @@ oknem (HTML UI wbudowany) oraz **instalatorem Windows**.
 
 | Oprogramowanie | Minimalna wersja | Uwagi |
 |---|---|---|
-| System | Windows 10 / 11 | Wymagane WebView2 (pre-instalowane od Win10 2022) |
-| AutoHotkey | v2.0 | Instalowane automatycznie przez instalator |
+| System | Windows 10 / 11 | — |
+| Microsoft Edge | dowolna | Pre-instalowany na Win10/11 |
+| AutoHotkey | v2.0 | Instalowany automatycznie przez instalator |
 | iBiznes | dowolna | — |
 | Python | — | **Nie wymagany** – zawarty w .exe |
 
-> WebView2 jest pre-instalowane na Windows 10 (aktualizacja 2022+) i Windows 11.
-> Na starszych systemach instalator pobierze je automatycznie.
+> Microsoft Edge jest pre-instalowany na Windows 10 i 11.
+> Program otwiera się jako okno Edge w trybie aplikacji (brak paska adresu).
 
 ---
 
 ## Instalacja
 
-### Szybka instalacja (zalecane)
+### Opcja A – Instalator .exe (zalecane)
 
 1. Pobierz **`iBiznesBot-Setup-v3.0.0.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
 2. Uruchom instalator jako **Administrator** (prawy przycisk → Uruchom jako administrator)
@@ -53,9 +54,14 @@ oknem (HTML UI wbudowany) oraz **instalatorem Windows**.
 5. Skrót **iBiznes Bot** pojawi się na pulpicie i w menu Start
 6. Instalator automatycznie zainstaluje **AutoHotkey v2** jeśli nie ma
 
+### Opcja B – Pojedynczy .exe (portable)
+
+Pobierz `iBiznesBot.exe` z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases),
+uruchom bezpośrednio. Żadnej instalacji, żadnych uprawnień administratora.
+
 ### Po instalacji
 
-Kliknij dwukrotnie skrót **iBiznes Bot** na pulpicie.
+Kliknij dwukrotnie skrót **iBiznes Bot** na pulpicie lub uruchom `iBiznesBot.exe`.
 
 > Przy pierwszym uruchomieniu program może potrzebować kilku sekund na inicjalizację.
 
@@ -63,12 +69,11 @@ Kliknij dwukrotnie skrót **iBiznes Bot** na pulpicie.
 
 ## Jak uruchomić
 
-Kliknij dwukrotnie **skrót iBiznes Bot** na pulpicie.
+Kliknij dwukrotnie **skrót iBiznes Bot** na pulpicie lub `iBiznesBot.exe`.
 
-Otworzy się okno aplikacji z wbudowanym panelem UI.
+Otworzy się okno aplikacji z wbudowanym panelem UI (Edge w trybie app).
 
-> Jeśli okno się nie otworzy – sprawdź Windows Defender / antywirus.
-> Aplikacja wymaga WebView2 Runtime (pre-instalowane na Win10/11).
+> Jeśli okno się nie otworzy – sprawdź Windows Defender / antywirus (patrz FAQ).
 
 ---
 
@@ -155,7 +160,7 @@ Wszystkie dane użytkownika przechowywane są w:
 ```
 iBiznesPythonBot/
 │
-├── main.py            # Entry point – PyWebView + Flask thread
+├── main.py            # Entry point – flaskwebgui + Flask (okno Edge app)
 ├── server.py          # Flask backend API (wszystkie endpointy)
 ├── pdf_to_csv.py      # Parser PDF faktur + eksporter CSV/XLS
 ├── ibiznes.ahk        # AutoHotkey v2 – automatyzacja GUI iBiznes
@@ -165,9 +170,9 @@ iBiznesPythonBot/
 ├── version.txt        # Wersja programu
 │
 ├── iBiznesBot.spec    # PyInstaller spec – budowanie .exe
-├── build.bat          # Skrypt budowania (PyInstaller + kopiowanie do installer/)
+├── build.bat          # Skrypt budowania (PyInstaller)
 ├── installer/
-│   └── setup.iss      # Inno Setup – budowanie instalatora .exe
+│   └── setup.iss      # Inno Setup – budowanie instalatora .exe (opcjonalne)
 │
 └── .github/
     └── workflows/
@@ -180,26 +185,32 @@ iBiznesPythonBot/
 
 ### Wymagania
 
-- Python 3.9+
-- [Inno Setup 6](https://jrsoftware.org/isinfo.php) (opcjonalnie – tylko do budowania instalatora)
+- Python 3.9+ (testowane na 3.14)
+- [Inno Setup 6.1+](https://jrsoftware.org/isinfo.php) – **tylko** jeśli chcesz budować instalator
 
-### Kroki
+### Krok 1 – Zbuduj iBiznesBot.exe
 
 ```bat
-:: 1. Zbuduj iBiznesBot.exe
 build.bat
-
-:: Wynik: dist\iBiznesBot\iBiznesBot.exe
 ```
+
+`build.bat` automatycznie instaluje wszystkie zależności (`flask`, `flaskwebgui`, `pdfplumber`,
+`pandas`, `pyinstaller` itp.) i uruchamia PyInstaller.
+
+**Wynik:** `dist\iBiznesBot\iBiznesBot.exe` (folder z .exe – gotowy do użycia)
+
+### Krok 2 – Zbuduj instalator (opcjonalnie)
 
 ```bat
-:: 2. Zbuduj instalator (opcjonalnie, wymaga Inno Setup)
 iscc installer\setup.iss
-
-:: Wynik: dist\installer\iBiznesBot-Setup-v3.0.0.exe
 ```
 
-Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI i kliknij Build.
+Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI → Build → Compile.
+
+**Wynik:** `dist\installer\iBiznesBot-Setup-v3.0.0.exe`
+
+> **Bez Inno Setup:** Możesz rozdystrybuować folder `dist\iBiznesBot\` lub sam plik
+> `dist\iBiznesBot\iBiznesBot.exe` (portable, nie wymaga instalacji).
 
 ---
 
@@ -207,10 +218,10 @@ Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI i kliknij Build.
 
 ### Okno programu się nie otwiera
 
-**Przyczyna:** Brak WebView2 Runtime.
+**Przyczyna:** Microsoft Edge nie jest zainstalowany (bardzo rzadkie na Win10/11).
 
-**Rozwiązanie:** Pobierz i zainstaluj [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
-Na Windows 10/11 (2022+) jest pre-instalowany.
+**Rozwiązanie:** Zainstaluj [Microsoft Edge](https://www.microsoft.com/edge).
+Na Windows 10/11 Edge jest pre-instalowany – sprawdź czy nie został ręcznie usunięty.
 
 ---
 
@@ -262,6 +273,9 @@ fałszywy alarm (false positive). Dodaj `iBiznesBot.exe` do wyjątków antywirus
 **P: Czy program wymaga Pythona?**
 O: Nie. Od v3.0 Python jest zawarty w pliku .exe (bundlowany przez PyInstaller).
 
+**P: Czy program wymaga WebView2 lub .NET?**
+O: Nie. Od v3.0.0 używamy flaskwebgui (Edge w trybie app) – brak zależności od .NET lub WebView2 Runtime.
+
 **P: Czy dane z v2.x zostaną zachowane?**
 O: Tak – jeśli masz skonfigurowane `coords.json` i `config.json`, skopiuj je do
 `%APPDATA%\iBiznesBot\` po instalacji v3.0.
@@ -286,33 +300,24 @@ O: Nie – bot przejmuje sterowanie myszą i klawiaturą.
 
 ### v3.0.0 (2026-03)
 **Pełny rewrite projektu:**
-- **Program .exe** – PyWebView + Flask bundlowany przez PyInstaller; własne okno Windows z HTML UI (brak przeglądarki, brak Pythona na systemie)
-- **Instalator .exe** – Inno Setup; instalacja do Program Files, skrót pulpit/Start Menu, deinstalator, AutoHotkey v2 bundlowany
+- **Program .exe** – flaskwebgui + Flask bundlowany przez PyInstaller; okno Edge w trybie app (brak przeglądarki, brak Pythona na systemie, działa na Python 3.14+)
+- **Instalator .exe** – Inno Setup 6.1+; instalacja do Program Files, skrót pulpit/Start Menu, deinstalator, AutoHotkey v2 bundlowany
 - **Dane użytkownika** przeniesione do `%APPDATA%\iBiznesBot\` (coords.json, config.json, logi, uploads)
 - **ibiznes.ahk** – ścieżki plików zaktualizowane do APPDATA
 - **server.py** – DATA_DIR refactor; nowy endpoint `/api/check-update` (GitHub Releases API)
 - **pdf_to_csv.py** – log w APPDATA
-- **main.py** – nowy entry point (PyWebView + Flask thread + setup APPDATA)
+- **main.py** – nowy entry point (flaskwebgui + Flask + setup APPDATA)
 - **ui.html** – banner aktualizacji, branding v3.0
-- **build.bat** – skrypt automatycznego budowania
-- **installer/setup.iss** – Inno Setup script
+- **build.bat** – skrypt automatycznego budowania (python -m pip, python -m PyInstaller)
+- **installer/setup.iss** – Inno Setup script (wbudowany download AHK, bez zewnętrznych pluginów)
 - **CI** – zaktualizowany na branch `v3.0`
 - Usunięto: `INSTALL.bat`, `START.bat`
 
 ### v2.2.12 (2026-03)
 - **START.bat**: naprawiono `Nie można odnaleźć dysku.` – przywrócono `start /wait "" "%~dp0INSTALL.bat"`
 
-### v2.2.11 (2026-03)
-- **INSTALL.bat**: `cd /d "%~dp0"` na początku
-
-### v2.2.10 (2026-03)
-- **START.bat**: walidacja katalogu, absolutne ścieżki
-
-### v2.2.9 (2026-03)
-- **START.bat**: `start /wait` zamiast `call`, fix CR w porównywaniu wersji, flaga `SKIP_UPDATE`
-
 ### v2.x (2026-03)
-- CI GitHub Actions, ZIP installer, parser PDF, TRYB BEZPIECZNY, historia faktur
+- CI GitHub Actions, ZIP installer, parser PDF, TRYB BEZPIECZNY, historia faktur, auto-update
 
 ### v2.0 (2026-03)
 - Nowy przepływ AHK (absolutne koordynaty pikseli), TRYB BEZPIECZNY → XLS,
