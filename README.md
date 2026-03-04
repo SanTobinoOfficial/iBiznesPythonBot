@@ -433,6 +433,9 @@ O: Upewnij się że fokus jest na oknie iBiznes. Zwiększ opóźnienie po ostatn
 
 ## Changelog
 
+### v2.2.12 (2026-03)
+- **START.bat**: Naprawiono `Nie można odnaleźć dysku.` – przywrócono kanoniczną formę `start /wait "" "%~dp0INSTALL.bat"` (poprzedni `cmd /c ""ścieżka""` powodował błąd parsowania cudzysłowów przez CMD)
+
 ### v2.2.11 (2026-03)
 - **INSTALL.bat**: Dodano `cd /d "%~dp0"` na początku – INSTALL.bat zawsze działa we własnym katalogu, niezależnie od kontekstu uruchomienia. Naprawia `_installed.flag` trafiający w złe miejsce gdy katalog roboczy był niepoprawny.
 
