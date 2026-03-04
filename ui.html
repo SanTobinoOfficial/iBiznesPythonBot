@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>iBiznes · Bot Zakupów v2</title>
+<title>iBiznes · Bot Zakupów v3.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -221,11 +221,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
   <button onclick="document.getElementById('firstRunBanner').style.display='none'">✕</button>
 </div>
 
+<!-- UPDATE BANNER -->
+<div id="updateBanner" style="display:none;align-items:center;gap:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:6px;padding:10px 16px;margin-bottom:14px;font-size:12px">
+  <span style="color:#22c55e;font-size:16px">⬆</span>
+  <span id="updateMsg" style="flex:1;color:#e2e8f0"></span>
+  <a id="updateLink" href="#" target="_blank" style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);border-radius:4px;color:#22c55e;font-family:var(--mono);font-size:11px;padding:5px 12px;text-decoration:none;white-space:nowrap">Pobierz</a>
+  <button onclick="document.getElementById('updateBanner').style.display='none'" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>
+</div>
+
 <!-- HEADER -->
 <header>
   <div class="logo-block">
     <div class="logo-label">Panel sterowania</div>
-    <div class="logo-title">i<span>Biznes</span> · Bot<span class="logo-version">v2.0</span></div>
+    <div class="logo-title">i<span>Biznes</span> · Bot<span class="logo-version">v3.0.0</span></div>
   </div>
   <div class="usd-badge">
     <div class="lbl">Kurs NBP <button class="refresh-btn" id="refreshRate">↻</button></div>
@@ -1253,9 +1261,25 @@ const dz=$('dropZone');
 ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('dragover')}));
 ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('dragover');if(ev==='drop')handleFile(e.dataTransfer.files[0])}));
 
+/* ── AKTUALIZACJE ───────────────────────────────────────────── */
+async function checkUpdate() {
+  try {
+    const r = await fetch(`${API}/api/check-update`, {signal: AbortSignal.timeout(5000)});
+    if(!r.ok) return;
+    const d = await r.json();
+    if(d.hasUpdate && d.latest) {
+      const banner = $('updateBanner');
+      $('updateMsg').textContent = `Dostępna aktualizacja v${d.latest} (masz v${d.current}) – pobierz nowy instalator`;
+      const link = $('updateLink');
+      if(d.url) link.href = d.url;
+      banner.style.display = 'flex';
+    }
+  } catch(_) {}
+}
+
 /* ── INIT ───────────────────────────────────────────────────── */
 (async () => {
-  log('iBiznes Bot v2.0 gotowy.', 'accent');
+  log('iBiznes Bot v3.0.0 gotowy.', 'accent');
   setAppStatus('idle');
 
   // first run param
@@ -1283,8 +1307,11 @@ const dz=$('dropZone');
     const r = await fetch(`${API}/api/ping`,{signal:AbortSignal.timeout(2000)});
     if(r.ok) { setAppStatus('connected'); log('✓ Połączono z serwerem Flask.','ok'); }
   } catch(_) {
-    log('⚠ Serwer niedostępny. Uruchom: python server.py', 'warn');
+    log('⚠ Serwer niedostępny.', 'warn');
   }
+
+  // Sprawdź aktualizacje w tle
+  setTimeout(checkUpdate, 2000);
 })();
 </script>
 </body>

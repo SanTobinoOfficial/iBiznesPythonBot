@@ -1,10 +1,11 @@
 """
 ================================================================================
   server.py  –  Flask backend dla panelu UI bota iBiznes
-  Wersja 2.0 – config, historia faktur, auto-wykrywanie sciezki
+  Wersja 3.0 – dane w %APPDATA%\\iBiznesBot\\, PyWebView-ready
 ================================================================================
-  pip install flask flask-cors requests pandas pywinauto Pillow pdfplumber xlwt
-  python server.py
+  pip install flask flask-cors requests pandas pywinauto pdfplumber openpyxl xlwt pywebview
+  Uruchomienie standalone: python server.py
+  Uruchomienie w .exe:     import server; server.app.run(...)
 ================================================================================
 """
 
@@ -24,21 +25,36 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests
-from flask import Flask, Response, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_file, send_from_directory
 from flask_cors import CORS
 
 from pdf_to_csv import InvoicePDFParser, CSVExporter
 
-# ── PLIKI ─────────────────────────────────────────────────────────────────────
-LOG_FILE          = "server.log"
-CONFIG_FILE       = "config.json"
-HISTORY_FILE      = "history.json"
-PRICE_ALERTS_FILE = "price_alerts.txt"
-AHK_SCRIPT        = "ibiznes.ahk"
-TASK_FILE         = "task.json"
-RESULT_FILE       = "result.json"
-COORDS_FILE       = "coords.json"
+# ── ŚCIEŻKI ────────────────────────────────────────────────────────────────────
+
+def resource_path(rel: str) -> str:
+    """Ścieżka do zasobów bundlowanych przez PyInstaller lub katalog dev."""
+    base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel)
+
+
+# Folder danych użytkownika – %APPDATA%\iBiznesBot\
+DATA_DIR    = os.path.join(os.environ.get('APPDATA', '.'), 'iBiznesBot')
+UPLOADS_DIR = os.path.join(DATA_DIR, 'uploads')
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+LOG_FILE          = os.path.join(DATA_DIR, "server.log")
+CONFIG_FILE       = os.path.join(DATA_DIR, "config.json")
+HISTORY_FILE      = os.path.join(DATA_DIR, "history.json")
+PRICE_ALERTS_FILE = os.path.join(DATA_DIR, "price_alerts.txt")
+AHK_SCRIPT        = os.path.join(DATA_DIR, "ibiznes.ahk")
+TASK_FILE         = os.path.join(DATA_DIR, "task.json")
+RESULT_FILE       = os.path.join(DATA_DIR, "result.json")
+COORDS_FILE       = os.path.join(DATA_DIR, "coords.json")
+
 NBP_API           = "https://api.nbp.pl/api/exchangerates/rates/a/{}//?format=json"
+GITHUB_RELEASES   = "https://api.github.com/repos/SanTobinoOfficial/iBiznesPythonBot/releases/latest"
+VERSION           = "3.0.0"
 
 DEFAULT_COORDS = {
     "_comment":     "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",
@@ -49,9 +65,9 @@ DEFAULT_COORDS = {
     "btnF7":        {"x": 420, "y": 117},
 }
 
-HISTORY_MAX       = 50   # max wpisow w historii faktur
+HISTORY_MAX = 50
 
-# ── DOMYSLNA KONFIGURACJA ─────────────────────────────────────────────────────
+# ── DOMYŚLNA KONFIGURACJA ──────────────────────────────────────────────────────
 DEFAULT_CONFIG = {
     "exePath":             "",
     "ahkExePath":          r"C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe",
@@ -64,14 +80,14 @@ DEFAULT_CONFIG = {
     "lastInvoiceDate":     "",
     "lastInvoiceNr":       "",
     "lastNIP":             "",
-    "ibiznesMenuPath":     "auto",   # auto / custom
-    "customMenuPath":      "",       # np. "Dokumenty,Zakupy"
+    "ibiznesMenuPath":     "auto",
+    "customMenuPath":      "",
     "priceAlertEmail":     "",
     "maxRetries":          3,
-    "stepDelay":           500,      # ms opoznienia miedzy krokami
+    "stepDelay":           500,
 }
 
-# ── LOGGING ───────────────────────────────────────────────────────────────────
+# ── LOGGING ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)-8s] %(message)s",
@@ -82,7 +98,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("Server")
 
-app = Flask(__name__, static_folder=".")
+app = Flask(__name__)
 CORS(app)
 
 active_jobs: Dict[str, Any] = {}
@@ -97,8 +113,7 @@ def load_config() -> dict:
         try:
             with open(CONFIG_FILE, encoding="utf-8") as f:
                 saved = json.load(f)
-            cfg = {**DEFAULT_CONFIG, **saved}
-            return cfg
+            return {**DEFAULT_CONFIG, **saved}
         except Exception as e:
             log.warning(f"Blad odczytu config.json: {e}")
     return dict(DEFAULT_CONFIG)
@@ -127,7 +142,6 @@ def load_history() -> List[dict]:
 
 def save_history(entry: dict) -> None:
     history = load_history()
-    # Wstaw na poczatek, usun duplikat jesli ten sam nr faktury
     history = [h for h in history if h.get("invoiceNr") != entry.get("invoiceNr")]
     history.insert(0, entry)
     history = history[:HISTORY_MAX]
@@ -136,7 +150,7 @@ def save_history(entry: dict) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AUTO-WYKRYWANIE IBIZNES
+# AUTO-WYKRYWANIE
 # ─────────────────────────────────────────────────────────────────────────────
 
 IBIZNES_SEARCH_PATHS = [
@@ -150,39 +164,30 @@ IBIZNES_SEARCH_PATHS = [
 
 
 def autodetect_ibiznes() -> Optional[str]:
-    """Szuka iBiznes.exe w popularnych lokalizacjach."""
     for path in IBIZNES_SEARCH_PATHS:
         if os.path.isfile(path):
-            log.info(f"Znaleziono iBiznes: {path}")
             return path
-
-    # Szukaj przez glob w Program Files
     for base in [r"C:\Program Files", r"C:\Program Files (x86)", r"D:\Program Files"]:
         matches = glob.glob(os.path.join(base, "**", "iBiznes.exe"), recursive=True)
         if matches:
-            log.info(f"Znaleziono iBiznes (glob): {matches[0]}")
             return matches[0]
-
-    # Szukaj w rejestrze Windows (jesli dostepny)
     try:
         import winreg
         for root in [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]:
             try:
-                key = winreg.OpenKey(root, r"SOFTWARE\iBiznes")
+                key  = winreg.OpenKey(root, r"SOFTWARE\iBiznes")
                 path, _ = winreg.QueryValueEx(key, "InstallDir")
-                exe = os.path.join(path, "iBiznes.exe")
+                exe  = os.path.join(path, "iBiznes.exe")
                 if os.path.isfile(exe):
                     return exe
             except Exception:
                 pass
     except ImportError:
         pass
-
     return None
 
 
 def autodetect_ahk() -> Optional[str]:
-    """Szuka AutoHotkey v2."""
     paths = [
         r"C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe",
         r"C:\Program Files\AutoHotkey\v2\AutoHotkey.exe",
@@ -201,16 +206,16 @@ def autodetect_ahk() -> Optional[str]:
 
 class JobRunner:
     def __init__(self, job_id: str, payload: dict) -> None:
-        self.job_id  = job_id
-        self.payload = payload
-        self.config  = load_config()
-        self.queue:  queue.Queue = queue.Queue()
-        self.running = True
-        self.added   = 0
-        self.skipped = 0
-        self.errors  = 0
+        self.job_id   = job_id
+        self.payload  = payload
+        self.config   = load_config()
+        self.queue:   queue.Queue = queue.Queue()
+        self.running  = True
+        self.added    = 0
+        self.skipped  = 0
+        self.errors   = 0
         self.usd_rate: float = 0.0
-        self.thread  = threading.Thread(target=self._run, daemon=True)
+        self.thread   = threading.Thread(target=self._run, daemon=True)
         self.thread.start()
 
     def _emit(self, type_: str, **kwargs) -> None:
@@ -259,29 +264,28 @@ class JobRunner:
                 self._finish(False)
                 return
 
-            # Uzupelnij exe path z config jesli brak
             exe_path = self.payload.get("exePath", "") or self.config.get("exePath", "")
             if not exe_path:
                 exe_path = autodetect_ibiznes() or ""
 
             task = {
-                "jobId":              self.job_id,
-                "nip":                self.payload.get("nip", ""),
-                "invoiceNr":          self.payload.get("invoiceNr", ""),
-                "invoiceDate":        self.payload.get("invoiceDate", ""),
-                "supplier":           self.payload.get("supplier", "") or self.payload.get("nip", ""),
-                "exePath":            exe_path,
-                "tolerance":          tol,
-                "usdRate":            rate,
-                "currency":           currency,
-                "runMode":            run_mode,
-                "diagMode":           diag,
-                "autoOpenIBiznes":    self.config.get("autoOpenIBiznes", True),
-                "autoNavigateZakup":  self.config.get("autoNavigateZakup", True),
-                "ibiznesMenuPath":    self.config.get("ibiznesMenuPath", "auto"),
-                "customMenuPath":     self.config.get("customMenuPath", ""),
-                "stepDelay":          int(self.config.get("stepDelay", 500)),
-                "maxRetries":         int(self.config.get("maxRetries", 3)),
+                "jobId":             self.job_id,
+                "nip":               self.payload.get("nip", ""),
+                "invoiceNr":         self.payload.get("invoiceNr", ""),
+                "invoiceDate":       self.payload.get("invoiceDate", ""),
+                "supplier":          self.payload.get("supplier", "") or self.payload.get("nip", ""),
+                "exePath":           exe_path,
+                "tolerance":         tol,
+                "usdRate":           rate,
+                "currency":          currency,
+                "runMode":           run_mode,
+                "diagMode":          diag,
+                "autoOpenIBiznes":   self.config.get("autoOpenIBiznes", True),
+                "autoNavigateZakup": self.config.get("autoNavigateZakup", True),
+                "ibiznesMenuPath":   self.config.get("ibiznesMenuPath", "auto"),
+                "customMenuPath":    self.config.get("customMenuPath", ""),
+                "stepDelay":         int(self.config.get("stepDelay", 500)),
+                "maxRetries":        int(self.config.get("maxRetries", 3)),
                 "items": [
                     {
                         "kod":      row.get("kod_produktu", ""),
@@ -307,7 +311,6 @@ class JobRunner:
             if os.path.exists(RESULT_FILE):
                 os.remove(RESULT_FILE)
 
-            # Zapisz w historii
             save_history({
                 "invoiceNr":   task["invoiceNr"],
                 "nip":         task["nip"],
@@ -318,7 +321,6 @@ class JobRunner:
                 "status":      "running",
             })
 
-            # Aktualizuj config – zapamietaj ostatnie wartosci
             cfg = load_config()
             cfg["lastNIP"]         = task["nip"]
             cfg["lastInvoiceNr"]   = task["invoiceNr"]
@@ -350,7 +352,7 @@ class JobRunner:
             return 4.05
 
     def _launch_ahk(self) -> bool:
-        cfg = load_config()
+        cfg     = load_config()
         ahk_exe = cfg.get("ahkExePath", "") or autodetect_ahk() or ""
 
         if not ahk_exe or not os.path.isfile(ahk_exe):
@@ -419,7 +421,6 @@ class JobRunner:
             pct = ((i + 1) / max(total, 1)) * 100
             self._stats(pct, f"[{i+1}/{total}] {kod}")
 
-        # Aktualizuj historie
         history = load_history()
         if history:
             history[0]["status"]     = "done" if result.get("success") else "error"
@@ -465,12 +466,34 @@ class JobRunner:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# API
+# API ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route("/api/ping")
 def api_ping():
-    return jsonify({"ok": True, "time": datetime.now().isoformat(), "version": "2.0"})
+    return jsonify({"ok": True, "time": datetime.now().isoformat(), "version": VERSION})
+
+
+@app.route("/api/check-update")
+def api_check_update():
+    """Sprawdza najnowszą wersję na GitHub Releases."""
+    try:
+        r = requests.get(GITHUB_RELEASES, timeout=5,
+                         headers={"Accept": "application/vnd.github+json"})
+        r.raise_for_status()
+        data        = r.json()
+        remote_tag  = data.get("tag_name", "").lstrip("v")
+        html_url    = data.get("html_url", "")
+        has_update  = remote_tag != VERSION and remote_tag != ""
+        return jsonify({
+            "current":   VERSION,
+            "latest":    remote_tag,
+            "hasUpdate": has_update,
+            "url":       html_url,
+        })
+    except Exception as e:
+        return jsonify({"current": VERSION, "latest": None,
+                        "hasUpdate": False, "error": str(e)})
 
 
 @app.route("/api/rate")
@@ -494,7 +517,6 @@ def api_rate():
 @app.route("/api/config", methods=["GET"])
 def api_config_get():
     cfg = load_config()
-    # Uzupelnij autodetect jesli brak sciezek
     if not cfg.get("exePath"):
         found = autodetect_ibiznes()
         if found:
@@ -520,8 +542,8 @@ def api_autodetect():
     ibiznes = autodetect_ibiznes()
     ahk     = autodetect_ahk()
     return jsonify({
-        "ibiznes": ibiznes,
-        "ahk":     ahk,
+        "ibiznes":      ibiznes,
+        "ahk":          ahk,
         "ibiznesFound": bool(ibiznes),
         "ahkFound":     bool(ahk),
     })
@@ -608,26 +630,14 @@ def api_logs():
     return jsonify({"lines": [l.rstrip() for l in all_lines[-lines_n:]]})
 
 
-UPLOADS_DIR = "uploads"
-
-
 @app.route("/api/pdf-upload", methods=["POST"])
 def api_pdf_upload():
-    """
-    Przyjmuje plik PDF (multipart/form-data, pole 'file'),
-    parsuje fakture i zwraca pozycje + naglowek jako JSON.
-    Dodatkowo zapisuje CSV i Excel do katalogu uploads/.
-    """
     if "file" not in request.files:
         return jsonify({"ok": False, "error": "Brak pola 'file' w zadaniu."}), 400
-
     f = request.files["file"]
     if not f.filename or not f.filename.lower().endswith(".pdf"):
         return jsonify({"ok": False, "error": "Plik musi byc w formacie PDF."}), 400
 
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-
-    # Zapisz PDF tymczasowo
     safe_name  = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.filename}"
     pdf_path   = os.path.join(UPLOADS_DIR, safe_name)
     csv_path   = pdf_path.replace(".pdf", ".csv")
@@ -643,8 +653,7 @@ def api_pdf_upload():
         if not items:
             return jsonify({
                 "ok":    False,
-                "error": "Nie znaleziono pozycji produktow w PDF. "
-                         "Sprawdz czy plik to faktura w obslugiwanym formacie.",
+                "error": "Nie znaleziono pozycji produktow w PDF.",
             }), 422
 
         exporter = CSVExporter(items, parser.header)
@@ -657,7 +666,6 @@ def api_pdf_upload():
         except ImportError:
             log.warning("openpyxl nie zainstalowany – pomijam Excel.")
 
-        # Przeczytaj CSV jako string (do pobrania przez UI)
         with open(csv_path, encoding="utf-8") as fcsv:
             csv_data = fcsv.read()
 
@@ -680,28 +688,21 @@ def api_pdf_upload():
 
 @app.route("/api/safe-convert", methods=["POST"])
 def api_safe_convert():
-    """
-    TRYB BEZPIECZNY: przyjmuje PDF lub CSV, zwraca plik .xls w formacie importu iBiznes.
-    Form fields: file (PDF/CSV), currency (USD/EUR/PLN), rate (opcjonalny float)
-    """
     if "file" not in request.files:
         return jsonify({"ok": False, "error": "Brak pola 'file' w zadaniu."}), 400
-
     f = request.files["file"]
     if not f.filename:
         return jsonify({"ok": False, "error": "Brak nazwy pliku."}), 400
 
-    currency = request.form.get("currency", "USD").upper()
+    currency  = request.form.get("currency", "USD").upper()
     rate_str  = request.form.get("rate", "")
 
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-    safe_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.filename}"
+    safe_name   = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.filename}"
     upload_path = os.path.join(UPLOADS_DIR, safe_name)
     f.save(upload_path)
     log.info(f"Safe-convert upload: {upload_path}")
 
     try:
-        # Pobierz kurs jeśli nie podano
         if rate_str:
             try:
                 rate = float(rate_str)
@@ -735,7 +736,6 @@ def api_safe_convert():
             except UnicodeDecodeError:
                 df = pd.read_csv(upload_path, encoding="cp1250")
             items = df.to_dict("records")
-            # Normalizuj nazwy kolumn
             normalized = []
             for row in items:
                 normalized.append({
@@ -754,7 +754,6 @@ def api_safe_convert():
         else:
             return jsonify({"ok": False, "error": "Plik musi być PDF lub CSV."}), 400
 
-        from pdf_to_csv import CSVExporter
         exporter   = CSVExporter(items, header)
         xls_name   = safe_name.rsplit(".", 1)[0] + "_ibiznes.xls"
         xls_path   = os.path.join(UPLOADS_DIR, xls_name)
@@ -781,7 +780,6 @@ def api_safe_convert():
 
 @app.route("/api/coords", methods=["GET"])
 def api_coords_get():
-    """Zwraca zawartość coords.json (koordynaty pikseli dla AHK)."""
     if os.path.exists(COORDS_FILE):
         try:
             with open(COORDS_FILE, encoding="utf-8") as f:
@@ -793,10 +791,8 @@ def api_coords_get():
 
 @app.route("/api/coords", methods=["POST"])
 def api_coords_post():
-    """Zapisuje koordynaty do coords.json."""
     data = request.get_json(force=True) or {}
     try:
-        # Wczytaj istniejący plik, by zachować _comment i inne klucze
         existing = dict(DEFAULT_COORDS)
         if os.path.exists(COORDS_FILE):
             with open(COORDS_FILE, encoding="utf-8") as f:
@@ -813,12 +809,10 @@ def api_coords_post():
 
 @app.route("/api/download")
 def api_download():
-    """Pobierz wygenerowany plik (CSV lub Excel) po sciezce wzglednej."""
     file_path = request.args.get("path", "")
     if not file_path:
         return jsonify({"error": "Brak parametru path"}), 400
-    # Bezpieczenstwo: tylko pliki w katalogu uploads/
-    abs_path = os.path.abspath(file_path)
+    abs_path    = os.path.abspath(file_path)
     abs_uploads = os.path.abspath(UPLOADS_DIR)
     if not abs_path.startswith(abs_uploads):
         return jsonify({"error": "Niedozwolona sciezka"}), 403
@@ -831,41 +825,38 @@ def api_download():
 
 @app.route("/")
 def serve_ui():
-    return send_from_directory(".", "ui.html")
+    """Serwuje ui.html z bundlowanych zasobów (PyInstaller) lub folderu dev."""
+    return send_file(resource_path("ui.html"))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN
+# MAIN – uruchomienie standalone (python server.py)
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # Auto-wykryj przy starcie i zapisz do config
-    cfg = load_config()
+    cfg     = load_config()
     changed = False
     if not cfg.get("exePath"):
         found = autodetect_ibiznes()
         if found:
             cfg["exePath"] = found
             changed = True
-            log.info(f"Auto-wykryto iBiznes: {found}")
     if not cfg.get("ahkExePath") or not os.path.isfile(cfg.get("ahkExePath", "")):
         found = autodetect_ahk()
         if found:
             cfg["ahkExePath"] = found
             changed = True
-            log.info(f"Auto-wykryto AHK: {found}")
     if changed:
         save_config(cfg)
 
     print("=" * 60)
-    print("  iBiznes Bot v2.0 - Serwer Flask")
+    print(f"  iBiznes Bot v{VERSION} - Serwer Flask")
     print("=" * 60)
-    print(f"  Panel UI : http://localhost:5000")
-    print(f"  iBiznes  : {cfg.get('exePath') or '(nie znaleziony)'}")
-    print(f"  AHK      : {cfg.get('ahkExePath') or '(nie znaleziony)'}")
-    print(f"  Config   : {CONFIG_FILE}")
-    print(f"  Historia : {HISTORY_FILE}")
+    print(f"  Panel UI  : http://localhost:5000")
+    print(f"  iBiznes   : {cfg.get('exePath') or '(nie znaleziony)'}")
+    print(f"  AHK       : {cfg.get('ahkExePath') or '(nie znaleziony)'}")
+    print(f"  DataDir   : {DATA_DIR}")
     print("=" * 60)
 
-    app.run(host="localhost", port=5000, debug=False,
+    app.run(host="127.0.0.1", port=5000, debug=False,
             threaded=True, use_reloader=False)

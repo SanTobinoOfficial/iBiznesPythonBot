@@ -2,21 +2,7 @@
 ================================================================================
   pdf_to_csv.py  –  Konwerter faktur PDF → CSV/Excel dla bota iBiznes
   Dopasowany do formatu faktur LEVIOR / FESTA (format INVOICE 202600961)
-================================================================================
-
-INSTALACJA:
-    pip install pdfplumber pandas openpyxl xlwt
-
-UZYCIE:
-    python pdf_to_csv.py                        # tryb interaktywny
-    python pdf_to_csv.py faktura.pdf            # konwertuj podany plik
-    python pdf_to_csv.py faktura.pdf wynik.csv  # podaj nazwe wyjsciowa
-
-WYNIK:
-    Plik CSV gotowy do wczytania przez bota:
-    kod_produktu,nazwa,ilosc,cena_netto_usd
-
-    Plus opcjonalny raport HTML z podgladem wszystkich pozycji.
+  v3.0 – log w %APPDATA%\\iBiznesBot\\
 ================================================================================
 """
 
@@ -32,7 +18,9 @@ import pandas as pd
 import pdfplumber
 
 # ── konfiguracja ──────────────────────────────────────────────────────────────
-LOG_FILE = "pdf_converter.log"
+_DATA_DIR = os.path.join(os.environ.get('APPDATA', '.'), 'iBiznesBot')
+os.makedirs(_DATA_DIR, exist_ok=True)
+LOG_FILE = os.path.join(_DATA_DIR, "pdf_converter.log")
 
 logging.basicConfig(
     level=logging.INFO,
