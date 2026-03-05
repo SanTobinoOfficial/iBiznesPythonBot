@@ -1,7 +1,7 @@
 ; ============================================================================
-;  setup.iss  –  Inno Setup 6.1+  –  iBiznes Bot v3.0 Installer
+;  setup.iss  –  Inno Setup 6.1+  –  iBiznes Bot v3.1 Installer
 ;  Kompilacja: iscc setup.iss  (lub Inno Setup Compiler GUI)
-;  Wynik: dist\installer\iBiznesBot-Setup-v3.0.0.exe
+;  Wynik: dist\installer\iBiznesBot-Setup-v3.1.0.exe
 ;
 ;  Wymaga: folderu app\ obok tego pliku (wypełniony przez build.bat)
 ;  Pobierz Inno Setup 6.1+: https://jrsoftware.org/isinfo.php
@@ -11,7 +11,7 @@
 ; ============================================================================
 
 #define AppName      "iBiznes Bot"
-#define AppVersion   "3.0.0"
+#define AppVersion   "3.1.0"
 #define AppPublisher "SanTobinoOfficial"
 #define AppURL       "https://github.com/SanTobinoOfficial/iBiznesPythonBot"
 #define AppExeName   "iBiznesBot.exe"
