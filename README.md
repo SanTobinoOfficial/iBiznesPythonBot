@@ -47,7 +47,7 @@ oknem aplikacji (HTML UI wbudowany w Edge/Chrome, bez osobnej przeglądarki).
 
 ### Opcja A – Instalator .exe (zalecane)
 
-1. Pobierz **`iBiznesBot-Setup-v3.0.0.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
+1. Pobierz **`iBiznesBot-Setup-v3.1.0.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
 2. Uruchom instalator jako **Administrator** (prawy przycisk → Uruchom jako administrator)
 3. Postępuj zgodnie z kreatorem instalacji
 4. Program instaluje się do `C:\Program Files\iBiznes Bot\`
@@ -207,7 +207,7 @@ iscc installer\setup.iss
 
 Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI → Build → Compile.
 
-**Wynik:** `dist\installer\iBiznesBot-Setup-v3.0.0.exe`
+**Wynik:** `dist\installer\iBiznesBot-Setup-v3.1.0.exe`
 
 > **Bez Inno Setup:** Możesz rozdystrybuować folder `dist\iBiznesBot\` lub sam plik
 > `dist\iBiznesBot\iBiznesBot.exe` (portable, nie wymaga instalacji).
@@ -297,6 +297,16 @@ O: Nie – bot przejmuje sterowanie myszą i klawiaturą.
 ---
 
 ## Changelog
+
+### v3.1.0 (2026-03)
+- **Auto-wykrywanie aktualizacji** – program sprawdza GitHub Releases przy starcie i co 6 godzin; zielony banner gdy dostępna jest nowsza wersja
+- **Poprawne porównanie wersji semver** – endpoint `/api/check-update` używa porównania krotek zamiast string compare
+- **Polskie nazwy produktów z bazy MDB** – `pdf_to_csv.py` wczytuje nazwy z bazy iBiznes (Access `.mdb`) przez pyodbc; fallback na nazwę z PDF gdy brak sterownika/bazy
+- **Kod produktu = 5 cyfr** – Excel/XLS skraca `10048.01` → `10048`
+- **bazaMdbPath** – nowe pole konfiguracji wskazujące na plik `.mdb`
+- **build.bat** – dodano `pyodbc` do listy zależności
+- **iBiznesBot.spec** – `pyodbc` w `hiddenimports`
+- **installer/setup.iss** – wersja 3.1.0
 
 ### v3.0.0 (2026-03)
 **Pełny rewrite projektu:**
