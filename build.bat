@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title iBiznes Bot - Budowanie v3.0
+title iBiznes Bot - Budowanie v3.1
 
 echo.
-echo  iBiznes Bot v3.0 - Budowanie .exe
+echo  iBiznes Bot v3.1 - Budowanie .exe
 echo  ====================================
 echo.
 
@@ -46,7 +46,8 @@ python -m pip install ^
     pdfplumber ^
     openpyxl ^
     xlwt ^
-    pywin32
+    pywin32 ^
+    pyodbc
 
 if %errorlevel% neq 0 (
     echo  BLAD: Instalacja zaleznosci nie powiodla sie.
@@ -85,6 +86,6 @@ echo    Opcja B (GUI):
 echo      Otworz installer\setup.iss w Inno Setup Compiler
 echo      i kliknij Build ^> Compile
 echo.
-echo  Wynik: dist\installer\iBiznesBot-Setup-v3.0.0.exe
+echo  Wynik: dist\installer\iBiznesBot-Setup-v3.1.0.exe
 echo.
 pause
