@@ -4,7 +4,7 @@ cd /d "%~dp0"
 title iBiznes Bot - Budowanie v3.2
 
 echo.
-echo  iBiznes Bot v3.2.0 - Budowanie .exe
+echo  iBiznes Bot v3.2.1 - Budowanie .exe
 echo  ====================================
 echo.
 
@@ -32,12 +32,13 @@ if not exist "coords.json" (
 
 :: ── [1] Zainstaluj zaleznosci ──────────────────────────────────────────────
 echo  [1/3] Instalacja zaleznosci Python...
-echo  (flaskwebgui zamiast pywebview – nie wymaga .NET ani pythonnet)
+echo  (pywebview – natywne okno WebView2/Win32, nie przegladarka)
 echo.
 python -m pip install --upgrade pip --quiet
 python -m pip install ^
     pyinstaller ^
-    flaskwebgui ^
+    pywebview ^
+    pythonnet ^
     flask ^
     flask-cors ^
     requests ^
@@ -86,6 +87,6 @@ echo    Opcja B (GUI):
 echo      Otworz installer\setup.iss w Inno Setup Compiler
 echo      i kliknij Build ^> Compile
 echo.
-echo  Wynik: dist\installer\iBiznesBot-Setup-v3.2.0.exe
+echo  Wynik: dist\installer\iBiznesBot-Setup-v3.2.1.exe
 echo.
 pause

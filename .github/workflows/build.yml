@@ -36,7 +36,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install `
             pyinstaller `
-            flaskwebgui `
+            pywebview `
+            pythonnet `
             flask `
             flask-cors `
             requests `
