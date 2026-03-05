@@ -54,7 +54,7 @@ COORDS_FILE       = os.path.join(DATA_DIR, "coords.json")
 
 NBP_API           = "https://api.nbp.pl/api/exchangerates/rates/a/{}//?format=json"
 GITHUB_RELEASES   = "https://api.github.com/repos/SanTobinoOfficial/iBiznesPythonBot/releases/latest"
-VERSION           = "3.0.0"
+VERSION           = "3.1.0"
 
 DEFAULT_COORDS = {
     "_comment":     "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",
@@ -475,9 +475,19 @@ def api_ping():
     return jsonify({"ok": True, "time": datetime.now().isoformat(), "version": VERSION})
 
 
+def _version_gt(remote: str, current: str) -> bool:
+    """Porownuje wersje semver. Zwraca True jesli remote > current."""
+    try:
+        r_parts = tuple(int(x) for x in remote.split("."))
+        c_parts = tuple(int(x) for x in current.split("."))
+        return r_parts > c_parts
+    except Exception:
+        return remote != current
+
+
 @app.route("/api/check-update")
 def api_check_update():
-    """Sprawdza najnowszą wersję na GitHub Releases."""
+    """Sprawdza najnowszą wersję na GitHub Releases (semver)."""
     try:
         r = requests.get(GITHUB_RELEASES, timeout=5,
                          headers={"Accept": "application/vnd.github+json"})
@@ -485,7 +495,7 @@ def api_check_update():
         data        = r.json()
         remote_tag  = data.get("tag_name", "").lstrip("v")
         html_url    = data.get("html_url", "")
-        has_update  = remote_tag != VERSION and remote_tag != ""
+        has_update  = bool(remote_tag) and _version_gt(remote_tag, VERSION)
         return jsonify({
             "current":   VERSION,
             "latest":    remote_tag,
