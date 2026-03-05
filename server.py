@@ -85,6 +85,7 @@ DEFAULT_CONFIG = {
     "priceAlertEmail":     "",
     "maxRetries":          3,
     "stepDelay":           500,
+    "bazaMdbPath":         "",
 }
 
 # ── LOGGING ────────────────────────────────────────────────────────────────────
@@ -656,7 +657,8 @@ def api_pdf_upload():
                 "error": "Nie znaleziono pozycji produktow w PDF.",
             }), 422
 
-        exporter = CSVExporter(items, parser.header)
+        mdb_path = load_config().get("bazaMdbPath", "")
+        exporter = CSVExporter(items, parser.header, mdb_path=mdb_path)
         exporter.to_csv(csv_path)
 
         actual_excel = None
@@ -754,7 +756,8 @@ def api_safe_convert():
         else:
             return jsonify({"ok": False, "error": "Plik musi być PDF lub CSV."}), 400
 
-        exporter   = CSVExporter(items, header)
+        mdb_path   = load_config().get("bazaMdbPath", "")
+        exporter   = CSVExporter(items, header, mdb_path=mdb_path)
         xls_name   = safe_name.rsplit(".", 1)[0] + "_ibiznes.xls"
         xls_path   = os.path.join(UPLOADS_DIR, xls_name)
         exporter.to_ibiznes_xls(xls_path, currency=currency, rate=rate)
