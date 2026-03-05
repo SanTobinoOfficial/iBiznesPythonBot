@@ -1279,7 +1279,7 @@ async function checkUpdate() {
 
 /* ── INIT ───────────────────────────────────────────────────── */
 (async () => {
-  log('iBiznes Bot v3.0.0 gotowy.', 'accent');
+  log('iBiznes Bot v3.1.0 gotowy.', 'accent');
   setAppStatus('idle');
 
   // first run param
@@ -1310,8 +1310,9 @@ async function checkUpdate() {
     log('⚠ Serwer niedostępny.', 'warn');
   }
 
-  // Sprawdź aktualizacje w tle
+  // Sprawdź aktualizacje w tle – przy starcie i co 6 godzin
   setTimeout(checkUpdate, 2000);
+  setInterval(checkUpdate, 6 * 60 * 60 * 1000);
 })();
 </script>
 </body>
