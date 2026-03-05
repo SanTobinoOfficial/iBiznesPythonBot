@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# iBiznesBot.spec – PyInstaller spec dla iBiznes Bot v3.1
+# iBiznesBot.spec – PyInstaller spec dla iBiznes Bot v3.2.0
 # Budowanie: python -m PyInstaller iBiznesBot.spec --clean --noconfirm
 #
 # Używa flaskwebgui (Edge/Chrome w trybie app) zamiast pywebview.

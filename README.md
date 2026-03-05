@@ -1,4 +1,4 @@
-# iBiznes Bot v3.0 – Panel automatyzacji faktur zakupowych
+# iBiznes Bot v3.2.0 – Panel automatyzacji faktur zakupowych
 
 Zautomatyzowany panel do wprowadzania faktur zakupowych w programie **iBiznes**.
 Odczytuje dane z pliku **PDF lub CSV** i za pomocą **AutoHotkey v2** klika w odpowiednie
@@ -47,7 +47,7 @@ oknem aplikacji (HTML UI wbudowany w Edge/Chrome, bez osobnej przeglądarki).
 
 ### Opcja A – Instalator .exe (zalecane)
 
-1. Pobierz **`iBiznesBot-Setup-v3.1.1.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
+1. Pobierz **`iBiznesBot-Setup-v3.2.0.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
 2. Uruchom instalator jako **Administrator** (prawy przycisk → Uruchom jako administrator)
 3. Postępuj zgodnie z kreatorem instalacji
 4. Program instaluje się do `C:\Program Files\iBiznes Bot\`
@@ -207,7 +207,7 @@ iscc installer\setup.iss
 
 Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI → Build → Compile.
 
-**Wynik:** `dist\installer\iBiznesBot-Setup-v3.1.1.exe`
+**Wynik:** `dist\installer\iBiznesBot-Setup-v3.2.0.exe`
 
 > **Bez Inno Setup:** Możesz rozdystrybuować folder `dist\iBiznesBot\` lub sam plik
 > `dist\iBiznesBot\iBiznesBot.exe` (portable, nie wymaga instalacji).
@@ -297,6 +297,16 @@ O: Nie – bot przejmuje sterowanie myszą i klawiaturą.
 ---
 
 ## Changelog
+
+### v3.2.0 (2026-03) – Duży bugfix
+- **Naprawiono krytyczny błąd podwójnego `_finish()`** – gdy AutoHotkey nie był zainstalowany, symulacja woła `_finish(True)`, ale `server.py` woła następnie `_finish(False)` drugi raz → UI pokazywał błąd mimo poprawnego działania symulacji. Naprawione przez zwrócenie `True` po symulacji
+- **Naprawiono `.replace(".pdf", ...)` w `api_pdf_upload()`** – użycie `str.replace` mogło nadpisać wiele wystąpień `.pdf` w ścieżce pliku; zastąpione przez `os.path.splitext()` (robustność)
+- **Naprawiono `.replace('.csv', ...)` w `pdf_to_csv.py convert()`** – ta sama klasa błędów; zastąpione przez `os.path.splitext()`
+- **Naprawiono `workflow_dispatch` w `build.yml`** – ręczne uruchomienie CI kończyło się błędem `gh release upload main ...` (nazwa brancha zamiast tagu); dodano warunek `if: startsWith(github.ref, 'refs/tags/')`
+- **Naprawiono Inno Setup version pin** – usunięto `--version 6.2.2` z `choco install innosetup` (wersja mogła nie istnieć w Chocolatey)
+- **Dodano pywin32 post-install step w build.yml** – rejestracja DLL pywin32 na Windows CI (`continue-on-error: true`)
+- **Zaktualizowano stale docstringi** – `server.py`, `main.py`, `pdf_to_csv.py` wskazywały na v3.0 / PyWebView / pywinauto
+- **Zaktualizowano UI** – tytuł okna i logo-version wyświetlały `v3.0.0` zamiast bieżącej wersji
 
 ### v3.1.1 (2026-03)
 - **Naprawiono błąd krytyczny ibiznes.ahk** – parser JSON zawierał `;` jako separator instrukcji (niedozwolony w AHK v2 – traktowany jako komentarz); wszystkie `{ stmt1; stmt2 }` przepisane na poprawny styl wieloliniowy

@@ -49,6 +49,12 @@ jobs:
             pyodbc
         shell: pwsh
 
+      # ── 3b. pywin32 post-install (rejestracja DLL na Windows CI) ───────────
+      - name: pywin32 post-install
+        run: python Scripts/pywin32_postinstall.py -install
+        shell: pwsh
+        continue-on-error: true   # nie przerywaj buildu jeśli krok opcjonalny zawiedzie
+
       # ── 4. Buduj .exe przez PyInstaller ────────────────────────────────────
       - name: Buduj iBiznesBot.exe (PyInstaller)
         run: python -m PyInstaller iBiznesBot.spec --clean --noconfirm
@@ -63,7 +69,7 @@ jobs:
 
       # ── 6. Zainstaluj Inno Setup 6 przez Chocolatey ────────────────────────
       - name: Zainstaluj Inno Setup 6
-        run: choco install innosetup --version 6.2.2 -y --no-progress
+        run: choco install innosetup -y --no-progress
         shell: cmd
 
       # ── 7. Skompiluj instalator .exe ───────────────────────────────────────
@@ -80,8 +86,9 @@ jobs:
           echo "Wersja: $v"
         shell: pwsh
 
-      # ── 9. Wgraj installer do GitHub Release ───────────────────────────────
+      # ── 9. Wgraj installer do GitHub Release (tylko przy push tagu) ────────
       - name: Upload iBiznesBot-Setup-vX.Y.Z.exe do Release
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
