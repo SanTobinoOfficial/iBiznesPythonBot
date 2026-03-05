@@ -2,7 +2,7 @@
 ================================================================================
   pdf_to_csv.py  –  Konwerter faktur PDF → CSV/Excel dla bota iBiznes
   Dopasowany do formatu faktur LEVIOR / FESTA (format INVOICE 202600961)
-  v3.0 – log w %APPDATA%\\iBiznesBot\\
+  v3.2.0 – log w %APPDATA%\\iBiznesBot\\
 ================================================================================
 """
 
@@ -693,8 +693,9 @@ def convert(pdf_path: str, csv_path: str = None,
         base     = Path(pdf_path).stem
         csv_path = str(Path(pdf_path).parent / f"{base}.csv")
 
-    excel_path  = csv_path.replace('.csv', '_ibiznes.xlsx')
-    report_path = csv_path.replace('.csv', '_raport.html')
+    base_path   = os.path.splitext(csv_path)[0]
+    excel_path  = base_path + '_ibiznes.xlsx'
+    report_path = base_path + '_raport.html'
 
     log.info("=" * 60)
     log.info("PDF → CSV/Excel Konwerter (iBiznes Bot)")

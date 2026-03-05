@@ -1,9 +1,9 @@
 """
 ================================================================================
   server.py  –  Flask backend dla panelu UI bota iBiznes
-  Wersja 3.0 – dane w %APPDATA%\\iBiznesBot\\, PyWebView-ready
+  Wersja 3.2.0 – dane w %APPDATA%\\iBiznesBot\\, flaskwebgui-ready
 ================================================================================
-  pip install flask flask-cors requests pandas pywinauto pdfplumber openpyxl xlwt pywebview
+  pip install flask flask-cors requests pandas pdfplumber openpyxl xlwt pyodbc flaskwebgui
   Uruchomienie standalone: python server.py
   Uruchomienie w .exe:     import server; server.app.run(...)
 ================================================================================
@@ -54,7 +54,7 @@ COORDS_FILE       = os.path.join(DATA_DIR, "coords.json")
 
 NBP_API           = "https://api.nbp.pl/api/exchangerates/rates/a/{}//?format=json"
 GITHUB_RELEASES   = "https://api.github.com/repos/SanTobinoOfficial/iBiznesPythonBot/releases/latest"
-VERSION           = "3.1.1"
+VERSION           = "3.2.0"
 
 DEFAULT_COORDS = {
     "_comment":     "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",
@@ -360,7 +360,9 @@ class JobRunner:
             self._log(f"AutoHotkey nie znaleziony: {ahk_exe}", "warn")
             self._log("Kontynuuje bez AHK (symulacja).", "warn")
             self._simulate_without_ahk()
-            return False
+            # _simulate_without_ahk() woła _finish(True) – zwracamy True
+            # żeby _run() NIE wołał _finish() drugi raz (double-finish bug)
+            return True
 
         if not os.path.isfile(AHK_SCRIPT):
             self._log(f"Skrypt AHK nie znaleziony: {AHK_SCRIPT}", "error")
@@ -651,8 +653,9 @@ def api_pdf_upload():
 
     safe_name  = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.filename}"
     pdf_path   = os.path.join(UPLOADS_DIR, safe_name)
-    csv_path   = pdf_path.replace(".pdf", ".csv")
-    excel_path = pdf_path.replace(".pdf", "_ibiznes.xlsx")
+    base_path  = os.path.splitext(pdf_path)[0]
+    csv_path   = base_path + ".csv"
+    excel_path = base_path + "_ibiznes.xlsx"
 
     f.save(pdf_path)
     log.info(f"PDF upload: {pdf_path}")

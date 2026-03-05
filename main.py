@@ -1,6 +1,6 @@
 """
 ================================================================================
-  main.py  –  iBiznes Bot v3.0  –  Entry point
+  main.py  –  iBiznes Bot v3.2.0  –  Entry point
   Uruchamia Flask + otwiera okno aplikacji przez flaskwebgui
   (Edge/Chrome w trybie --app, brak paska adresu, wygląda jak natywne okno).
   Bundlowany przez PyInstaller do iBiznesBot.exe.
@@ -74,7 +74,8 @@ def main() -> None:
         t.start()
         time.sleep(1.5)
         webbrowser.open("http://127.0.0.1:5000")
-        print("iBiznes Bot v3.0 – Panel: http://127.0.0.1:5000")
+        from server import VERSION as _srv_ver
+        print(f"iBiznes Bot v{_srv_ver} – Panel: http://127.0.0.1:5000")
         print("Zamknij terminal aby zatrzymac serwer.")
         try:
             while True:
