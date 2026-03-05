@@ -54,7 +54,7 @@ COORDS_FILE       = os.path.join(DATA_DIR, "coords.json")
 
 NBP_API           = "https://api.nbp.pl/api/exchangerates/rates/a/{}//?format=json"
 GITHUB_RELEASES   = "https://api.github.com/repos/SanTobinoOfficial/iBiznesPythonBot/releases/latest"
-VERSION           = "3.1.0"
+VERSION           = "3.1.1"
 
 DEFAULT_COORDS = {
     "_comment":     "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",

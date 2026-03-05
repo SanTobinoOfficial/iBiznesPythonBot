@@ -1,0 +1,91 @@
+# ============================================================================
+#  build.yml  –  Auto-build .exe + Inno Setup installer
+#  Wyzwalacz: nowy tag v*.*.* na main (tworzony przez gh release create)
+#  Wynik:     iBiznesBot-Setup-vX.Y.Z.exe wgrany do GitHub Release
+# ============================================================================
+
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:       # możliwy też ręczny start z GitHub UI
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write      # potrzebne do uploadu do Release
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repozytorium
+        uses: actions/checkout@v4
+
+      # ── 2. Python 3.11 (stabilny dla PyInstaller) ──────────────────────────
+      - name: Skonfiguruj Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ── 3. Instaluj zależności Python ──────────────────────────────────────
+      - name: Zainstaluj zależności Python
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install `
+            pyinstaller `
+            flaskwebgui `
+            flask `
+            flask-cors `
+            requests `
+            pandas `
+            numpy `
+            pdfplumber `
+            openpyxl `
+            xlwt `
+            pywin32 `
+            pyodbc
+        shell: pwsh
+
+      # ── 4. Buduj .exe przez PyInstaller ────────────────────────────────────
+      - name: Buduj iBiznesBot.exe (PyInstaller)
+        run: python -m PyInstaller iBiznesBot.spec --clean --noconfirm
+        shell: pwsh
+
+      # ── 5. Skopiuj do installer/app/ ───────────────────────────────────────
+      - name: Kopiuj do installer\app\
+        run: |
+          New-Item -ItemType Directory -Force -Path "installer\app" | Out-Null
+          Copy-Item -Path "dist\iBiznesBot\*" -Destination "installer\app\" -Recurse -Force
+        shell: pwsh
+
+      # ── 6. Zainstaluj Inno Setup 6 przez Chocolatey ────────────────────────
+      - name: Zainstaluj Inno Setup 6
+        run: choco install innosetup --version 6.2.2 -y --no-progress
+        shell: cmd
+
+      # ── 7. Skompiluj instalator .exe ───────────────────────────────────────
+      - name: Kompiluj installer (Inno Setup)
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss'
+        shell: pwsh
+
+      # ── 8. Odczytaj numer wersji ───────────────────────────────────────────
+      - name: Odczytaj wersję z version.txt
+        id: ver
+        run: |
+          $v = (Get-Content version.txt -Raw).Trim()
+          echo "VERSION=$v" >> $env:GITHUB_OUTPUT
+          echo "Wersja: $v"
+        shell: pwsh
+
+      # ── 9. Wgraj installer do GitHub Release ───────────────────────────────
+      - name: Upload iBiznesBot-Setup-vX.Y.Z.exe do Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.ref_name }} `
+            "dist\installer\iBiznesBot-Setup-v${{ steps.ver.outputs.VERSION }}.exe" `
+            --clobber
+        shell: pwsh

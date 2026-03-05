@@ -86,6 +86,6 @@ echo    Opcja B (GUI):
 echo      Otworz installer\setup.iss w Inno Setup Compiler
 echo      i kliknij Build ^> Compile
 echo.
-echo  Wynik: dist\installer\iBiznesBot-Setup-v3.1.0.exe
+echo  Wynik: dist\installer\iBiznesBot-Setup-v3.1.1.exe
 echo.
 pause

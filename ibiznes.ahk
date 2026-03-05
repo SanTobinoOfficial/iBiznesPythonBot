@@ -2,7 +2,7 @@
 ;  ibiznes.ahk  –  AutoHotkey v2  –  Automatyzacja faktur zakupowych
 ;  Wywoływany przez server.py:  AutoHotkey64.exe ibiznes.ahk task.json
 ;  Tryb: klikanie absolutnych pikseli (koordynaty z coords.json)
-;  v3.0 – dane w %APPDATA%\iBiznesBot\
+;  v3.1 – dane w %APPDATA%\iBiznesBot\
 ; ============================================================================
 
 #Requires AutoHotkey v2.0
@@ -20,7 +20,7 @@ global ResultItems := []
 global AhkLog      := FileOpen(LogFile, "a", "UTF-8")
 global Coords      := Map()
 
-LogMsg("AutoHotkey bot uruchomiony (v3.0)")
+LogMsg("AutoHotkey bot uruchomiony (v3.1)")
 
 ; Plik zadania – z argumentu lub domyślny w APPDATA
 taskFilePath := (A_Args.Length >= 1) ? A_Args[1] : TaskFile
@@ -270,9 +270,18 @@ class JSON {
         if (c = '"')  return JSON._parseString(s, &p)
         if (c = '{')  return JSON._parseObject(s, &p)
         if (c = '[')  return JSON._parseArray(s, &p)
-        if (c = 't')  { p += 4; return true }
-        if (c = 'f')  { p += 5; return false }
-        if (c = 'n')  { p += 4; return "" }
+        if (c = 't') {
+            p += 4
+            return true
+        }
+        if (c = 'f') {
+            p += 5
+            return false
+        }
+        if (c = 'n') {
+            p += 4
+            return ""
+        }
         return JSON._parseNumber(s, &p)
     }
 
@@ -286,7 +295,10 @@ class JSON {
         result := ""
         while (p <= StrLen(s)) {
             c := SubStr(s, p, 1)
-            if (c = '"') { p++; return result }
+            if (c = '"') {
+                p++
+                return result
+            }
             if (c = '\') {
                 p++
                 ec := SubStr(s, p, 1)
@@ -314,7 +326,10 @@ class JSON {
         p++
         obj := Map()
         JSON._skipWS(s, &p)
-        if (SubStr(s, p, 1) = '}') { p++; return obj }
+        if (SubStr(s, p, 1) = '}') {
+            p++
+            return obj
+        }
         loop {
             JSON._skipWS(s, &p)
             key := JSON._parseString(s, &p)
@@ -333,7 +348,10 @@ class JSON {
         p++
         arr := []
         JSON._skipWS(s, &p)
-        if (SubStr(s, p, 1) = ']') { p++; return arr }
+        if (SubStr(s, p, 1) = ']') {
+            p++
+            return arr
+        }
         loop {
             arr.Push(JSON._parseValue(s, &p))
             JSON._skipWS(s, &p)
