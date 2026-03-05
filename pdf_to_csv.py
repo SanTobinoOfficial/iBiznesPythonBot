@@ -17,6 +17,68 @@ from typing import List, Dict, Optional, Tuple
 import pandas as pd
 import pdfplumber
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LOOKUP NAZW Z BAZY iBIZNES (.mdb)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _load_ibiznes_names(mdb_path: str) -> Dict[str, str]:
+    """
+    Wczytuje polskie nazwy produktow z bazy iBiznes (Microsoft Access .mdb).
+    Zwraca slownik {kod_5cyfr: 'Polska nazwa'} lub {} jesli brak pliku/sterownika.
+
+    Wymaga: Microsoft Access Database Engine 2016 x64
+    Pobierz: https://www.microsoft.com/en-us/download/details.aspx?id=54920
+    """
+    if not mdb_path or not os.path.isfile(mdb_path):
+        return {}
+
+    try:
+        import pyodbc
+    except ImportError:
+        log.warning("pyodbc nie zainstalowane – polskie nazwy z MDB niedostepne.")
+        return {}
+
+    conn_str = (
+        r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+        f"DBQ={mdb_path};"
+    )
+    names: Dict[str, str] = {}
+    try:
+        conn = pyodbc.connect(conn_str, timeout=5)
+        cur  = conn.cursor()
+
+        # Typowe tabele iBiznes dla kartoteki produktow
+        table_candidates    = ["Kartoteka", "Towar", "Towary", "Artykul", "Produkty"]
+        code_col_candidates = ["Symbol", "Kod", "Nr_katalogowy", "KodProduktu"]
+
+        for table in table_candidates:
+            for code_col in code_col_candidates:
+                try:
+                    cur.execute(f"SELECT [{code_col}], [Nazwa] FROM [{table}]")
+                    for row in cur.fetchall():
+                        if row[0] and row[1]:
+                            kod = str(row[0]).strip()[:5]
+                            if kod.isdigit():
+                                names[kod] = str(row[1]).strip()
+                    if names:
+                        log.info(f"MDB: wczytano {len(names)} nazw z {table}.{code_col}")
+                        conn.close()
+                        return names
+                except Exception:
+                    pass
+
+        conn.close()
+        if not names:
+            log.warning(f"MDB: nie znaleziono tabeli produktow w {mdb_path}")
+    except Exception as e:
+        log.warning(
+            f"MDB: blad polaczenia ({e}). "
+            "Zainstaluj Microsoft Access Database Engine 2016 x64: "
+            "https://www.microsoft.com/en-us/download/details.aspx?id=54920"
+        )
+    return names
+
 # ── konfiguracja ──────────────────────────────────────────────────────────────
 _DATA_DIR = os.path.join(os.environ.get('APPDATA', '.'), 'iBiznesBot')
 os.makedirs(_DATA_DIR, exist_ok=True)
@@ -227,7 +289,7 @@ class InvoicePDFParser:
             return None
 
         return {
-            'kod_produktu':   code.strip(),
+            'kod_produktu':   code.strip()[:5],
             'nazwa':          self._clean_name(name),
             'ilosc':          qty,
             'cena_netto_usd': round(price, 4),
@@ -350,9 +412,14 @@ class InvoicePDFParser:
 class CSVExporter:
     """Eksportuje sparsowane pozycje do pliku CSV."""
 
-    def __init__(self, items: List[Dict], header: Dict) -> None:
-        self.items  = items
-        self.header = header
+    def __init__(self, items: List[Dict], header: Dict, mdb_path: str = "") -> None:
+        self.items      = items
+        self.header     = header
+        self._mdb_names = _load_ibiznes_names(mdb_path) if mdb_path else {}
+
+    def _get_nazwa(self, item: Dict) -> str:
+        """Zwraca polska nazwe z MDB (jesli dostepna) lub oryginalna z PDF."""
+        return self._mdb_names.get(item['kod_produktu'], item['nazwa'])
 
     def to_excel(self, output_path: str) -> str:
         """
@@ -395,7 +462,7 @@ class CSVExporter:
             ilosc = item["ilosc"]
             ilosc_val = int(ilosc) if ilosc == int(ilosc) else ilosc
             ws.cell(row=row_idx, column=1, value=item["kod_produktu"])
-            ws.cell(row=row_idx, column=2, value=item["nazwa"])
+            ws.cell(row=row_idx, column=2, value=self._get_nazwa(item))
             ws.cell(row=row_idx, column=3, value=ilosc_val)
             ws.cell(row=row_idx, column=4, value=item["cena_netto_usd"])
             ws.cell(row=row_idx, column=5, value=item.get("ean", ""))
@@ -440,9 +507,9 @@ class CSVExporter:
             supplier = self.header.get("supplier", "") or ""
 
             # 24 kolumny (A–X) – bez nagłówka
-            ws.write(row_idx, 0,  item["kod_produktu"])   # A: Kod towaru
-            ws.write(row_idx, 1,  item["kod_produktu"])   # B: Nr katalogowy
-            ws.write(row_idx, 2,  item["nazwa"])           # C: Nazwa towaru
+            ws.write(row_idx, 0,  item["kod_produktu"])       # A: Kod towaru
+            ws.write(row_idx, 1,  item["kod_produktu"])       # B: Nr katalogowy
+            ws.write(row_idx, 2,  self._get_nazwa(item))      # C: Nazwa towaru
             ws.write(row_idx, 3,  "")                      # D: Magazyn
             ws.write(row_idx, 4,  "T")                     # E: Rodzaj (T,U)
             ws.write(row_idx, 5,  "N")                     # F: Dodać do kartoteki (T,N)
