@@ -15,10 +15,20 @@ oknem aplikacji (HTML UI wbudowany w Edge/Chrome, bez osobnej przeglądarki).
 1. [Wymagania](#wymagania)
 2. [Instalacja](#instalacja)
 3. [Jak uruchomić](#jak-uruchomić)
-4. [Jak działa program](#jak-działa-program)
-   - [Tryb Normalny (AHK)](#tryb-normalny-ahk)
-   - [TRYB BEZPIECZNY → XLS](#tryb-bezpieczny--xls)
-5. [Konfiguracja koordynatów](#konfiguracja-koordynatów)
+4. [Wszystkie funkcje programu](#wszystkie-funkcje-programu)
+   - [1. Tryb Normalny – automatyczne wprowadzanie (AHK)](#1-tryb-normalny--automatyczne-wprowadzanie-ahk)
+   - [2. TRYB BEZPIECZNY – konwersja do XLS](#2-tryb-bezpieczny--konwersja-do-xls)
+   - [3. Parser faktur PDF](#3-parser-faktur-pdf)
+   - [4. Kurs walut z NBP](#4-kurs-walut-z-nbp)
+   - [5. Historia faktur](#5-historia-faktur)
+   - [6. Alerty cenowe](#6-alerty-cenowe)
+   - [7. Auto-wykrywanie ścieżek](#7-auto-wykrywanie-ścieżek)
+   - [8. Auto-aktualizacje](#8-auto-aktualizacje)
+   - [9. Polskie nazwy produktów z bazy MDB](#9-polskie-nazwy-produktów-z-bazy-mdb)
+   - [10. Konfiguracja koordynatów](#10-konfiguracja-koordynatów)
+   - [11. Panel logów](#11-panel-logów)
+   - [12. Podgląd i eksport danych](#12-podgląd-i-eksport-danych)
+5. [Konfiguracja koordynatów – szczegóły](#konfiguracja-koordynatów--szczegóły)
 6. [Dane użytkownika](#dane-użytkownika)
 7. [Struktura plików repo](#struktura-plików-repo)
 8. [Budowanie .exe (dla deweloperów)](#budowanie-exe-dla-deweloperów)
@@ -77,11 +87,11 @@ Otworzy się okno aplikacji z wbudowanym panelem UI (Edge w trybie app).
 
 ---
 
-## Jak działa program
+## Wszystkie funkcje programu
 
-### Tryb Normalny (AHK)
+### 1. Tryb Normalny – automatyczne wprowadzanie (AHK)
 
-Bot automatycznie wprowadza fakturę zakupową do iBiznes klikając w odpowiednie piksele ekranu.
+Bot automatycznie wprowadza fakturę zakupową do iBiznes, klikając w odpowiednie piksele ekranu przy pomocy **AutoHotkey v2**.
 
 **Przepływ (8 kroków):**
 1. Otwiera iBiznes (jeśli nie jest uruchomiony – ścieżka z Ustawień)
@@ -99,33 +109,178 @@ Bot automatycznie wprowadza fakturę zakupową do iBiznes klikając w odpowiedni
 3. Wybierz walutę (kurs pobierany automatycznie z NBP)
 4. Kliknij **"▶ Uruchom bota"**
 
+Postęp wyświetlany jest na żywo w panelu (SSE streaming – bez odświeżania strony).
+
 > **Uwaga:** iBiznes musi być otwarty i widoczny na ekranie. Nie używaj komputera podczas
 > działania bota – przejmuje on sterowanie myszą i klawiaturą.
 
 ---
 
-### TRYB BEZPIECZNY → XLS
+### 2. TRYB BEZPIECZNY – konwersja do XLS
 
-Konwertuje PDF lub CSV do pliku **Excel 2003 (.xls)** w formacie importu iBiznes –
-bez uruchamiania AHK i bez automatycznych kliknięć.
+Konwertuje PDF lub CSV do pliku **Excel 2003 (.xls)** w 24-kolumnowym formacie importu iBiznes – bez uruchamiania AHK i bez automatycznych kliknięć.
+
+Plik `.xls` zawiera wszystkie wymagane kolumny: kod towaru, nazwa, ilość, cena netto PLN, cena brutto PLN, cena dewizowa, VAT, JM, dostawca i inne.
 
 **Jak użyć:**
-1. Kliknij **"🔒 TRYB BEZPIECZNY (→ XLS)"**
+1. Kliknij zakładkę **"🔒 TRYB BEZPIECZNY"**
 2. Wgraj plik PDF lub CSV
-3. Wybierz walutę faktury
+3. Wybierz walutę faktury (kurs pobierany z NBP lub wpisz ręcznie)
 4. Kliknij **"🔄 Konwertuj do XLS"**
 5. Pobierz wygenerowany plik `.xls`
 6. Zaimportuj ręcznie do iBiznes: **Dokumenty → Import z pliku EXCEL'a**
 
 ---
 
-## Konfiguracja koordynatów
+### 3. Parser faktur PDF
+
+Automatycznie odczytuje dane z pliku PDF faktury zakupowej:
+
+- **Pozycje produktów**: kod (5 cyfr), nazwa, ilość, cena netto w walucie, EAN
+- **Nagłówek faktury**: numer faktury, nazwa dostawcy, data, waluta
+- **Deduplikacja**: jeśli ten sam kod pojawi się na kilku stronach PDF, ilości są sumowane
+- **Obsługiwane formaty**: LEVIOR s.r.o., FESTA Professional Tools (i inne faktury o podobnej strukturze kolumnowej)
+
+Po wgraniu PDF pola formularza (NIP, dostawca, numer faktury, data, waluta) są wypełniane automatycznie.
+
+Generowane pliki wynikowe:
+- `.csv` – dane surowe dla bota
+- `_ibiznes.xlsx` – podgląd w Excelu (z nagłówkami)
+- `_raport.html` – czytelny raport HTML z podsumowaniem wartości faktury
+
+---
+
+### 4. Kurs walut z NBP
+
+Kurs walut (USD, EUR i inne) pobierany jest automatycznie z **API Narodowego Banku Polskiego** (`api.nbp.pl`).
+
+- Kurs odświeżany przy każdym uruchomieniu bota
+- Możliwość wpisania kursu ręcznie (pole w formularzu)
+- Wyświetlany w nagłówku panelu (badge z aktualnym kursem i datą)
+- Fallback: `4.05 PLN` gdy NBP niedostępny
+- Obsługiwane waluty: USD, EUR, GBP, CHF, CZK i inne kody obsługiwane przez NBP
+
+---
+
+### 5. Historia faktur
+
+Panel **Historia** przechowuje ostatnie 50 przetworzonych faktur.
+
+Dla każdej faktury zapisane są:
+- Numer faktury, NIP dostawcy, data
+- Waluta, liczba pozycji
+- Status (`running` / `done` / `error`)
+- Liczba pozycji dodanych, pominiętych (alert cenowy), błędów
+- Czas rozpoczęcia i zakończenia
+
+Historia przechowywana jest w `%APPDATA%\iBiznesBot\history.json` i nie jest usuwana przy aktualizacji programu.
+
+---
+
+### 6. Alerty cenowe
+
+Gdy cena produktu z faktury różni się od ceny w systemie iBiznes o więcej niż **tolerancja** (domyślnie 0.05 PLN), pozycja jest oznaczana jako alert cenowy zamiast dodania do faktury.
+
+- Alerty widoczne w zakładce **"Alerty"** w panelu
+- Każdy alert zapisywany jest do pliku `%APPDATA%\iBiznesBot\price_alerts.txt` z timestampem
+- Format: `KOD | NAZWA | FAKTURA: X PLN | SYSTEM: Y PLN | RÓŻNICA: Z PLN | KURS: K`
+- Tolerancja konfigurowalna w Ustawieniach
+- Możliwość wyczyszczenia historii alertów jednym kliknięciem
+
+---
+
+### 7. Auto-wykrywanie ścieżek
+
+Program automatycznie szuka plików wykonywalnych na dysku:
+
+**iBiznes.exe** – sprawdzane lokalizacje:
+- `C:\Program Files\iBiznes\`
+- `C:\Program Files (x86)\iBiznes\`
+- `C:\iBiznes\`, `D:\iBiznes\`
+- Rekurencyjne przeszukanie `Program Files` na dyskach C i D
+- Rejestr Windows (`HKLM\SOFTWARE\iBiznes`)
+
+**AutoHotkey64.exe** – sprawdzane lokalizacje:
+- `C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe`
+- `C:\Program Files\AutoHotkey\v2\AutoHotkey.exe`
+- `C:\Program Files (x86)\AutoHotkey\v2\`
+
+Przycisk **"🔍 Wykryj"** w Ustawieniach uruchamia wykrywanie ręcznie.
+
+---
+
+### 8. Auto-aktualizacje
+
+Program automatycznie sprawdza dostępność nowej wersji na **GitHub Releases**:
+
+- Pierwsze sprawdzenie: **2 sekundy** po uruchomieniu
+- Kolejne sprawdzenia: co **6 godzin** (w tle, bez restartu)
+- Porównanie wersji: semver (`3.2.0 > 3.1.1`) – bez błędów przy porównaniu `3.1.9` vs `3.2.0`
+- Gdy dostępna nowa wersja: zielony banner na górze okna z przyciskiem **"Pobierz"**
+- Kliknięcie otwiera stronę Release na GitHubie
+
+---
+
+### 9. Polskie nazwy produktów z bazy MDB
+
+Jeśli posiadasz bazę danych iBiznes (plik `.mdb`), program może odczytywać **polskie nazwy produktów** zamiast anglojęzycznych nazw z faktury PDF.
+
+- Połączenie przez **pyodbc + Microsoft Access Driver**
+- Wyszukiwanie po kodzie 5-cyfrowym (np. `10048`)
+- Automatyczny fallback na nazwę z PDF gdy:
+  - Brak ścieżki do `.mdb` w konfiguracji
+  - Brak sterownika Microsoft Access Database Engine
+  - Produkt nie znaleziony w bazie
+- Ścieżka do `.mdb` ustawiana w: **⚙ Ustawienia → Ścieżka do bazy MDB**
+
+> Wymaga: [Microsoft Access Database Engine 2016 x64](https://www.microsoft.com/en-us/download/details.aspx?id=54920)
+
+---
+
+### 10. Konfiguracja koordynatów
 
 Bot klika na **bezwzględnych współrzędnych ekranu** (Screen X, Y). Koordynaty
-są zapisane w `%APPDATA%\iBiznesBot\coords.json` i edytowalne w UI.
+są zapisane w `%APPDATA%\iBiznesBot\coords.json` i edytowalne w UI bez restartowania programu.
+
+Konfigurowane punkty:
+| Klucz | Co klika |
+|---|---|
+| `btnZakup` | Przycisk "Zakup (...)" w menu |
+| `btnNewDoc` | Przycisk nowego dokumentu w lewym panelu |
+| `supplierField` | Pole nazwy/NIP dostawcy |
+| `tabPositions` | Zakładka "Pozycje" |
+| `btnF7` | (rezerwowy, używany przez AHK przez Send F7) |
 
 > **Ważne:** Jeśli zmienisz rozdzielczość, przesuniesz okno iBiznes lub podłączysz
 > inny monitor – **zaktualizuj koordynaty** w panelu.
+
+---
+
+### 11. Panel logów
+
+Zakładka **"Logi"** wyświetla ostatnie 100 linii z pliku `server.log`.
+
+- Logi z serwera Flask (operacje PDF, starty bota, błędy)
+- Odświeżane ręcznie przyciskiem
+- Pełne logi dostępne w `%APPDATA%\iBiznesBot\`:
+  - `server.log` – backend Python
+  - `ahk.log` – skrypt AutoHotkey (każde kliknięcie, każdy krok)
+  - `pdf_converter.log` – parsowanie PDF
+
+---
+
+### 12. Podgląd i eksport danych
+
+Po wgraniu pliku PDF lub CSV, dane wyświetlane są w tabeli podglądu przed uruchomieniem bota:
+
+- Kod produktu, nazwa (polska jeśli MDB skonfigurowane), ilość, cena netto w walucie
+- Możliwość pobrania wygenerowanego pliku **`.xlsx`** (podgląd z nagłówkami)
+- Możliwość pobrania pliku **`.xls`** (24 kolumny, gotowy do importu iBiznes)
+- Raport HTML (`_raport.html`) generowany automatycznie przy parsowaniu PDF – zawiera podsumowanie wartości faktury
+
+---
+
+## Konfiguracja koordynatów – szczegóły
 
 ### Jak znaleźć koordynaty (WindowSpy)
 
@@ -134,7 +289,7 @@ są zapisane w `%APPDATA%\iBiznesBot\coords.json` i edytowalne w UI.
 3. Kliknij prawym na ikonę AutoHotkey w zasobniku → **"WindowSpy"**
 4. Najedź kursorem na element w iBiznes (np. przycisk "Zakup")
 5. Odczytaj wartości **"Screen"**: `X: 256  Y: 77`
-6. Wpisz w panelu: **⚙ Ustawienia → Koordynaty iBiznes**
+6. Wpisz w panelu: **⚙ Ustawienia → Koordynaty iBiznes → Zapisz**
 
 ---
 
@@ -144,14 +299,16 @@ Wszystkie dane użytkownika przechowywane są w:
 
 ```
 %APPDATA%\iBiznesBot\
-├── coords.json       ← Twoje koordynaty kliknięć
-├── config.json       ← Konfiguracja (ścieżki, domyślne wartości)
-├── history.json      ← Historia przetworzonych faktur
-├── uploads\          ← Przesłane PDF/CSV i wygenerowane XLS
-└── *.log             ← Logi (server.log, ahk.log, pdf_converter.log)
+├── coords.json         ← Twoje koordynaty kliknięć (NIE nadpisywane przy update)
+├── config.json         ← Konfiguracja (ścieżki, domyślne wartości, bazaMdbPath)
+├── history.json        ← Historia przetworzonych faktur (ostatnie 50)
+├── price_alerts.txt    ← Log alertów cenowych
+├── uploads\            ← Przesłane PDF/CSV i wygenerowane XLS/XLSX
+├── ibiznes.ahk         ← Skrypt AHK (aktualizowany przy każdym uruchomieniu)
+└── *.log               ← Logi (server.log, ahk.log, pdf_converter.log)
 ```
 
-> Dane użytkownika **NIE są usuwane** przy odinstalowaniu programu.
+> Dane użytkownika **NIE są usuwane** przy odinstalowaniu ani aktualizacji programu.
 
 ---
 
@@ -162,21 +319,22 @@ iBiznesPythonBot/
 │
 ├── main.py            # Entry point – flaskwebgui + Flask (okno Edge app)
 ├── server.py          # Flask backend API (wszystkie endpointy)
-├── pdf_to_csv.py      # Parser PDF faktur + eksporter CSV/XLS
+├── pdf_to_csv.py      # Parser PDF faktur + eksporter CSV/XLS/XLSX
 ├── ibiznes.ahk        # AutoHotkey v2 – automatyzacja GUI iBiznes
 │
 ├── ui.html            # Panel UI (bundlowany w .exe)
-├── coords.json        # Domyślne koordynaty (kopiowane do %APPDATA%)
+├── coords.json        # Domyślne koordynaty (kopiowane do %APPDATA% jeśli brak)
 ├── version.txt        # Wersja programu
 │
 ├── iBiznesBot.spec    # PyInstaller spec – budowanie .exe
 ├── build.bat          # Skrypt budowania (PyInstaller)
 ├── installer/
-│   └── setup.iss      # Inno Setup – budowanie instalatora .exe (opcjonalne)
+│   └── setup.iss      # Inno Setup – budowanie instalatora .exe
 │
 └── .github/
     └── workflows/
-        └── ci.yml     # GitHub Actions – syntax check + auto-merge
+        ├── ci.yml     # GitHub Actions – syntax check + auto-merge PR
+        └── build.yml  # GitHub Actions – auto-build .exe + instalator przy tagu
 ```
 
 ---
@@ -195,7 +353,7 @@ build.bat
 ```
 
 `build.bat` automatycznie instaluje wszystkie zależności (`flask`, `flaskwebgui`, `pdfplumber`,
-`pandas`, `pyinstaller` itp.) i uruchamia PyInstaller.
+`pandas`, `pyinstaller`, `pyodbc` itp.) i uruchamia PyInstaller.
 
 **Wynik:** `dist\iBiznesBot\iBiznesBot.exe` (folder z .exe – gotowy do użycia)
 
@@ -211,6 +369,11 @@ Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI → Build → Co
 
 > **Bez Inno Setup:** Możesz rozdystrybuować folder `dist\iBiznesBot\` lub sam plik
 > `dist\iBiznesBot\iBiznesBot.exe` (portable, nie wymaga instalacji).
+
+### Auto-build (GitHub Actions)
+
+Każdy nowy tag `v*.*.*` na `main` automatycznie uruchamia workflow `.github/workflows/build.yml`,
+który buduje `.exe` + instalator i wgrywa `iBiznesBot-Setup-vX.Y.Z.exe` do GitHub Release.
 
 ---
 
@@ -261,6 +424,18 @@ kolumn w `pdf_to_csv.py` (stałe `COL_*`).
 
 ---
 
+### Polskie nazwy nie działają (MDB)
+
+**Przyczyna:** Brak sterownika Microsoft Access Database Engine lub błędna ścieżka do `.mdb`.
+
+**Rozwiązanie:**
+1. Pobierz i zainstaluj [Microsoft Access Database Engine 2016 x64](https://www.microsoft.com/en-us/download/details.aspx?id=54920)
+2. Panel: **⚙ Ustawienia → Ścieżka do bazy MDB** → wpisz ścieżkę do pliku `.mdb`
+
+> Bez sterownika program działa normalnie – używa nazw z PDF.
+
+---
+
 ### Antywirus blokuje iBiznesBot.exe
 
 PyInstaller bundluje Python interpreter + biblioteki w jeden .exe, co może wywołać
@@ -271,17 +446,17 @@ fałszywy alarm (false positive). Dodaj `iBiznesBot.exe` do wyjątków antywirus
 ## FAQ
 
 **P: Czy program wymaga Pythona?**
-O: Nie. Od v3.0 Python jest zawarty w pliku .exe (bundlowany przez PyInstaller).
+O: Nie. Python jest zawarty w pliku .exe (bundlowany przez PyInstaller).
 
 **P: Czy program wymaga WebView2 lub .NET?**
-O: Nie. Od v3.0.0 używamy flaskwebgui (Edge w trybie app) – brak zależności od .NET lub WebView2 Runtime.
+O: Nie. Używamy flaskwebgui (Edge w trybie app) – brak zależności od .NET lub WebView2 Runtime.
 
 **P: Czy dane z v2.x zostaną zachowane?**
 O: Tak – jeśli masz skonfigurowane `coords.json` i `config.json`, skopiuj je do
-`%APPDATA%\iBiznesBot\` po instalacji v3.0.
+`%APPDATA%\iBiznesBot\` po instalacji.
 
 **P: Skąd pobierać aktualizacje?**
-O: Program automatycznie sprawdza nowe wersje (banner w górnej części okna).
+O: Program automatycznie sprawdza nowe wersje co 6 godzin (banner w górnej części okna).
 Kliknij "Pobierz" aby przejść do strony Releases na GitHubie.
 
 **P: Gdzie są moje koordynaty i konfiguracja?**
@@ -293,6 +468,13 @@ WindowSpy wyświetla absolutne Screen X/Y z uwzględnieniem układu wielomonitor
 
 **P: Czy mogę używać komputera podczas działania bota?**
 O: Nie – bot przejmuje sterowanie myszą i klawiaturą.
+
+**P: Co robi bot gdy AHK nie jest zainstalowany?**
+O: Uruchamia tryb symulacji – pokazuje pozycje w panelu bez wprowadzania ich do iBiznes.
+Służy do weryfikacji danych z PDF/CSV przed faktycznym uruchomieniem.
+
+**P: Co to jest tolerancja cenowa?**
+O: Gdy cena z faktury różni się od ceny w systemie iBiznes o więcej niż tolerancja (domyślnie 0.05 PLN), pozycja trafia do alertów zamiast do faktury. Ustawiana w **⚙ Ustawienia**.
 
 ---
 
@@ -320,7 +502,6 @@ O: Nie – bot przejmuje sterowanie myszą i klawiaturą.
 - **bazaMdbPath** – nowe pole konfiguracji wskazujące na plik `.mdb`
 - **build.bat** – dodano `pyodbc` do listy zależności
 - **iBiznesBot.spec** – `pyodbc` w `hiddenimports`
-- **installer/setup.iss** – wersja 3.1.0
 
 ### v3.0.0 (2026-03)
 **Pełny rewrite projektu:**
@@ -329,12 +510,10 @@ O: Nie – bot przejmuje sterowanie myszą i klawiaturą.
 - **Dane użytkownika** przeniesione do `%APPDATA%\iBiznesBot\` (coords.json, config.json, logi, uploads)
 - **ibiznes.ahk** – ścieżki plików zaktualizowane do APPDATA
 - **server.py** – DATA_DIR refactor; nowy endpoint `/api/check-update` (GitHub Releases API)
-- **pdf_to_csv.py** – log w APPDATA
 - **main.py** – nowy entry point (flaskwebgui + Flask + setup APPDATA)
 - **ui.html** – banner aktualizacji, branding v3.0
 - **build.bat** – skrypt automatycznego budowania (python -m pip, python -m PyInstaller)
 - **installer/setup.iss** – Inno Setup script (wbudowany download AHK, bez zewnętrznych pluginów)
-- **CI** – zaktualizowany na branch `v3.0`
 - Usunięto: `INSTALL.bat`, `START.bat`
 
 ### v2.2.12 (2026-03)
