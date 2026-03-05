@@ -1,9 +1,9 @@
 """
 ================================================================================
   server.py  –  Flask backend dla panelu UI bota iBiznes
-  Wersja 3.2.1 – dane w %APPDATA%\\iBiznesBot\\, pywebview-ready
+  Wersja 3.2.2 – dane w %APPDATA%\\iBiznesBot\\, flaskwebgui-ready
 ================================================================================
-  pip install flask flask-cors requests pandas pdfplumber openpyxl xlwt pyodbc pywebview pythonnet
+  pip install flask flask-cors requests pandas pdfplumber openpyxl xlwt pyodbc flaskwebgui
   Uruchomienie standalone: python server.py
   Uruchomienie w .exe:     import server; server.app.run(...)
 ================================================================================
@@ -54,7 +54,7 @@ COORDS_FILE       = os.path.join(DATA_DIR, "coords.json")
 
 NBP_API           = "https://api.nbp.pl/api/exchangerates/rates/a/{}//?format=json"
 GITHUB_RELEASES   = "https://api.github.com/repos/SanTobinoOfficial/iBiznesPythonBot/releases/latest"
-VERSION           = "3.2.1"
+VERSION           = "3.2.2"
 
 DEFAULT_COORDS = {
     "_comment":     "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",

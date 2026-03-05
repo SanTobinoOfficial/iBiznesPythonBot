@@ -1,17 +1,22 @@
 """
 ================================================================================
-  main.py  –  iBiznes Bot v3.2.1  –  Entry point
-  Uruchamia Flask w wątku daemon + otwiera natywne okno desktopowe (pywebview).
-  pywebview używa WebView2 (Windows 10/11) lub MSHTML – prawdziwe okno Win32,
-  nie przeglądarka. Bundlowany przez PyInstaller do iBiznesBot.exe.
+  main.py  –  iBiznes Bot v3.2.2  –  Entry point
+  Uruchamia Flask + otwiera okno aplikacji przez flaskwebgui
+  (Edge/Chrome w trybie --app: brak paska adresu, zakładek i menu przeglądarki,
+  własna ikona w pasku zadań – wygląda i działa jak natywna aplikacja Windows).
+  Bundlowany przez PyInstaller do iBiznesBot.exe.
+
+  Dlaczego flaskwebgui, nie pywebview?
+  pywebview wymaga pythonnet (clr) do załadowania backendu WinForms/WebView2.
+  Kombinacja pythonnet + PyInstaller powoduje błędy DLL i wymaga konkretnej
+  wersji .NET na maszynie użytkownika. flaskwebgui działa na każdym Windows 10/11
+  bez żadnych dodatkowych zależności (Edge/Chrome są zawsze dostępne).
 ================================================================================
 """
 
 import os
 import shutil
 import sys
-import threading
-import time
 
 
 def resource_path(rel: str) -> str:
@@ -42,17 +47,6 @@ def setup_user_data() -> None:
         shutil.copy2(coords_src, coords_dst)
 
 
-def _run_flask(app) -> None:
-    """Uruchamia Flask w wątku daemon (nie blokuje pętli zdarzeń pywebview)."""
-    app.run(
-        host="127.0.0.1",
-        port=5000,
-        debug=False,
-        threaded=True,
-        use_reloader=False,
-    )
-
-
 def main() -> None:
     # 1. Przygotuj dane użytkownika
     setup_user_data()
@@ -60,31 +54,32 @@ def main() -> None:
     # 2. Załaduj Flask app
     from server import app, VERSION
 
-    # 3. Uruchom Flask w tle
-    flask_thread = threading.Thread(target=_run_flask, args=(app,), daemon=True)
-    flask_thread.start()
-
-    # Chwila na start Flask (zwykle <0.5s, 1.5s to zapas)
-    time.sleep(1.5)
-
-    # 4. Otwórz natywne okno desktopowe przez pywebview
-    #    WebView2 (Windows 10/11) – prawdziwe okno Win32, nie przeglądarka.
-    #    Nie ma paska adresu, zakładek ani żadnego chrome'u przeglądarki.
+    # 3. Uruchom okno – flaskwebgui otwiera Edge/Chrome w trybie --app
+    #    Brak paska adresu, zakładek i menu przeglądarki.
+    #    Własna ikona w pasku zadań. Wygląda jak natywna aplikacja.
     try:
-        import webview
-        window = webview.create_window(
-            title="iBiznes Bot",
-            url="http://127.0.0.1:5000",
+        from flaskwebgui import FlaskUI
+        ui = FlaskUI(
+            app=app,
+            server="flask",
             width=1280,
             height=820,
-            min_size=(900, 600),
-            resizable=True,
+            port=5000,
         )
-        webview.start()
-    except Exception as e:
-        # Fallback – pywebview niedostępne (dev bez GUI / headless CI)
-        print(f"[WARN] pywebview niedostępne ({e}). Otwieram w przeglądarce.")
+        ui.run()
+    except ImportError:
+        # Fallback – flaskwebgui nie zainstalowane, otwórz w przeglądarce
+        import threading
+        import time
         import webbrowser
+
+        def _start_flask():
+            app.run(host="127.0.0.1", port=5000,
+                    debug=False, threaded=True, use_reloader=False)
+
+        t = threading.Thread(target=_start_flask, daemon=True)
+        t.start()
+        time.sleep(1.5)
         webbrowser.open("http://127.0.0.1:5000")
         print(f"iBiznes Bot v{VERSION} – Panel: http://127.0.0.1:5000")
         print("Zamknij terminal aby zatrzymać serwer.")
