@@ -28,7 +28,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          # Nie używamy cache: 'pip' – brak requirements.txt w repo
 
       # ── 3. Instaluj zależności Python ──────────────────────────────────────
       - name: Zainstaluj zależności Python
@@ -51,7 +51,7 @@ jobs:
 
       # ── 3b. pywin32 post-install (rejestracja DLL na Windows CI) ───────────
       - name: pywin32 post-install
-        run: python Scripts/pywin32_postinstall.py -install
+        run: python -c "import sys, os; os.system(sys.executable + ' ' + os.path.join(os.path.dirname(sys.executable), 'Scripts', 'pywin32_postinstall.py') + ' -install')"
         shell: pwsh
         continue-on-error: true   # nie przerywaj buildu jeśli krok opcjonalny zawiedzie
 
