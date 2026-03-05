@@ -1,9 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
-# iBiznesBot.spec – PyInstaller spec dla iBiznes Bot v3.2.1
+# iBiznesBot.spec – PyInstaller spec dla iBiznes Bot v3.2.2
 # Budowanie: python -m PyInstaller iBiznesBot.spec --clean --noconfirm
 #
-# Używa pywebview (natywne okno WebView2 / Win32) – prawdziwe okno desktopowe,
-# nie przeglądarka. Wymaga Microsoft WebView2 Runtime (wbudowany w Win 10/11).
+# Używa flaskwebgui (Edge/Chrome w trybie --app) – brak paska adresu/zakładek,
+# własna ikona w pasku zadań, działa jak natywna aplikacja.
+# Nie wymaga .NET ani pythonnet – działa na każdym Windows 10/11.
 
 block_cipher = None
 
@@ -53,12 +54,8 @@ a = Analysis(
         'win32com',
         'pythoncom',
         'pywintypes',
-        # pywebview – natywne okno desktopowe (WebView2 / Win32)
-        'webview',
-        'webview.platforms',
-        'webview.platforms.winforms',   # Windows WinForms + WebView2 backend
-        'webview.platforms.mshtml',     # Fallback MSHTML (IE) dla starszych systemów
-        'clr',                          # pythonnet – wymagany przez WinForms backend
+        # flaskwebgui – okno Edge/Chrome w trybie --app (bez paska adresu)
+        'flaskwebgui',
         # Database
         'pyodbc',
     ],
@@ -72,8 +69,10 @@ a = Analysis(
         'scipy',
         'IPython',
         'jupyter',
-        # Stara zależność – już nieużywana
-        'flaskwebgui',
+        # Nieużywane (poprzednia próba pywebview – popsuta v3.2.1)
+        'webview',
+        'clr',
+        'pythonnet',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

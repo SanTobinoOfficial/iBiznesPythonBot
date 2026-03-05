@@ -1,4 +1,4 @@
-# iBiznes Bot v3.2.1 – Panel automatyzacji faktur zakupowych
+# iBiznes Bot v3.2.2 – Panel automatyzacji faktur zakupowych
 
 Zautomatyzowany panel do wprowadzania faktur zakupowych w programie **iBiznes**.
 Odczytuje dane z pliku **PDF lub CSV** i za pomocą **AutoHotkey v2** klika w odpowiednie
@@ -6,7 +6,8 @@ elementy iBiznes, wpisując kody produktów i ilości. Posiada też **TRYB BEZPI
 konwersję PDF/CSV do pliku Excel 2003 (.xls) gotowego do ręcznego importu.
 
 Od **v3.0** program dystrybuowany jest jako **plik wykonywalny .exe** z własnym
-oknem aplikacji (natywne okno Win32 via WebView2/pywebview – nie przeglądarka).
+oknem aplikacji (Edge/Chrome w trybie `--app` – brak paska adresu i zakładek,
+własna ikona w pasku zadań, wygląda jak natywna aplikacja Windows).
 
 ---
 
@@ -57,7 +58,7 @@ oknem aplikacji (natywne okno Win32 via WebView2/pywebview – nie przeglądarka
 
 ### Opcja A – Instalator .exe (zalecane)
 
-1. Pobierz **`iBiznesBot-Setup-v3.2.1.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
+1. Pobierz **`iBiznesBot-Setup-v3.2.2.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
 2. Uruchom instalator jako **Administrator** (prawy przycisk → Uruchom jako administrator)
 3. Postępuj zgodnie z kreatorem instalacji
 4. Program instaluje się do `C:\Program Files\iBiznes Bot\`
@@ -317,7 +318,7 @@ Wszystkie dane użytkownika przechowywane są w:
 ```
 iBiznesPythonBot/
 │
-├── main.py            # Entry point – pywebview + Flask (natywne okno Win32)
+├── main.py            # Entry point – flaskwebgui + Flask (okno Edge w trybie app)
 ├── server.py          # Flask backend API (wszystkie endpointy)
 ├── pdf_to_csv.py      # Parser PDF faktur + eksporter CSV/XLS/XLSX
 ├── ibiznes.ahk        # AutoHotkey v2 – automatyzacja GUI iBiznes
@@ -352,7 +353,7 @@ iBiznesPythonBot/
 build.bat
 ```
 
-`build.bat` automatycznie instaluje wszystkie zależności (`flask`, `pywebview`, `pdfplumber`,
+`build.bat` automatycznie instaluje wszystkie zależności (`flask`, `flaskwebgui`, `pdfplumber`,
 `pandas`, `pyinstaller`, `pyodbc` itp.) i uruchamia PyInstaller.
 
 **Wynik:** `dist\iBiznesBot\iBiznesBot.exe` (folder z .exe – gotowy do użycia)
@@ -365,7 +366,7 @@ iscc installer\setup.iss
 
 Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI → Build → Compile.
 
-**Wynik:** `dist\installer\iBiznesBot-Setup-v3.2.1.exe`
+**Wynik:** `dist\installer\iBiznesBot-Setup-v3.2.2.exe`
 
 > **Bez Inno Setup:** Możesz rozdystrybuować folder `dist\iBiznesBot\` lub sam plik
 > `dist\iBiznesBot\iBiznesBot.exe` (portable, nie wymaga instalacji).
@@ -481,9 +482,12 @@ O: Gdy cena z faktury różni się od ceny w systemie iBiznes o więcej niż tol
 
 ## Changelog
 
-### v3.2.1 (2026-03) – Bugfix: natywne okno aplikacji
-- **Naprawiono okno aplikacji** – zastąpiono `flaskwebgui` (Edge/Chrome w trybie `--app`) przez `pywebview` (prawdziwe natywne okno Win32/WebView2); aplikacja nie otwiera się już w przeglądarce
-- **Zaktualizowano `build.bat` i `build.yml`** – `flaskwebgui` zastąpiony przez `pywebview` + `pythonnet` (wymagany przez backend WinForms/WebView2)
+### v3.2.2 (2026-03) – Hotfix: przywrócono flaskwebgui (błędy instalatora v3.2.1)
+- **Przywrócono `flaskwebgui`** – pywebview + pythonnet powodowały błędy DLL i wymagały specyficznej wersji .NET na maszynie użytkownika; flaskwebgui działa na każdym Windows 10/11 bez dodatkowych zależności
+- **v3.2.1 oznaczona jako ZEPSUTA** – nie używaj tej wersji
+
+### v3.2.1 (2026-03) – ZEPSUTA (nie używaj)
+- Próba zastąpienia flaskwebgui przez pywebview – spowodowała błędy instalatora (konflikty DLL pythonnet)
 
 ### v3.2.0 (2026-03) – Duży bugfix
 - **Naprawiono krytyczny błąd podwójnego `_finish()`** – gdy AutoHotkey nie był zainstalowany, symulacja woła `_finish(True)`, ale `server.py` woła następnie `_finish(False)` drugi raz → UI pokazywał błąd mimo poprawnego działania symulacji. Naprawione przez zwrócenie `True` po symulacji
@@ -510,12 +514,12 @@ O: Gdy cena z faktury różni się od ceny w systemie iBiznes o więcej niż tol
 
 ### v3.0.0 (2026-03)
 **Pełny rewrite projektu:**
-- **Program .exe** – pywebview + Flask bundlowany przez PyInstaller; natywne okno Win32/WebView2 (brak Pythona na systemie)
+- **Program .exe** – flaskwebgui + Flask bundlowany przez PyInstaller; okno Edge w trybie app (brak Pythona na systemie)
 - **Instalator .exe** – Inno Setup 6.1+; instalacja do Program Files, skrót pulpit/Start Menu, deinstalator, AutoHotkey v2 bundlowany
 - **Dane użytkownika** przeniesione do `%APPDATA%\iBiznesBot\` (coords.json, config.json, logi, uploads)
 - **ibiznes.ahk** – ścieżki plików zaktualizowane do APPDATA
 - **server.py** – DATA_DIR refactor; nowy endpoint `/api/check-update` (GitHub Releases API)
-- **main.py** – nowy entry point (pywebview + Flask + setup APPDATA)
+- **main.py** – nowy entry point (flaskwebgui + Flask + setup APPDATA)
 - **ui.html** – banner aktualizacji, branding v3.0
 - **build.bat** – skrypt automatycznego budowania (python -m pip, python -m PyInstaller)
 - **installer/setup.iss** – Inno Setup script (wbudowany download AHK, bez zewnętrznych pluginów)
