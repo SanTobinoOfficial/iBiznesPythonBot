@@ -47,7 +47,7 @@ oknem aplikacji (HTML UI wbudowany w Edge/Chrome, bez osobnej przeglądarki).
 
 ### Opcja A – Instalator .exe (zalecane)
 
-1. Pobierz **`iBiznesBot-Setup-v3.1.0.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
+1. Pobierz **`iBiznesBot-Setup-v3.1.1.exe`** z [Releases](https://github.com/SanTobinoOfficial/iBiznesPythonBot/releases)
 2. Uruchom instalator jako **Administrator** (prawy przycisk → Uruchom jako administrator)
 3. Postępuj zgodnie z kreatorem instalacji
 4. Program instaluje się do `C:\Program Files\iBiznes Bot\`
@@ -207,7 +207,7 @@ iscc installer\setup.iss
 
 Lub otwórz `installer/setup.iss` w **Inno Setup Compiler** GUI → Build → Compile.
 
-**Wynik:** `dist\installer\iBiznesBot-Setup-v3.1.0.exe`
+**Wynik:** `dist\installer\iBiznesBot-Setup-v3.1.1.exe`
 
 > **Bez Inno Setup:** Możesz rozdystrybuować folder `dist\iBiznesBot\` lub sam plik
 > `dist\iBiznesBot\iBiznesBot.exe` (portable, nie wymaga instalacji).
@@ -297,6 +297,10 @@ O: Nie – bot przejmuje sterowanie myszą i klawiaturą.
 ---
 
 ## Changelog
+
+### v3.1.1 (2026-03)
+- **Naprawiono błąd krytyczny ibiznes.ahk** – parser JSON zawierał `;` jako separator instrukcji (niedozwolony w AHK v2 – traktowany jako komentarz); wszystkie `{ stmt1; stmt2 }` przepisane na poprawny styl wieloliniowy
+- **GitHub Actions auto-build** – nowy workflow `.github/workflows/build.yml`; przy każdym nowym release tagu automatycznie buduje `.exe` (PyInstaller + Python 3.11) i instalator (Inno Setup 6) oraz wgrywa `iBiznesBot-Setup-vX.Y.Z.exe` do GitHub Release
 
 ### v3.1.0 (2026-03)
 - **Auto-wykrywanie aktualizacji** – program sprawdza GitHub Releases przy starcie i co 6 godzin; zielony banner gdy dostępna jest nowsza wersja
