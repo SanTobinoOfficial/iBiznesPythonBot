@@ -11,7 +11,7 @@
 ; ============================================================================
 
 #define AppName      "iBiznes Bot"
-#define AppVersion   "3.2.2"
+#define AppVersion   "3.2.4"
 #define AppPublisher "SanTobinoOfficial"
 #define AppURL       "https://github.com/SanTobinoOfficial/iBiznesPythonBot"
 #define AppExeName   "iBiznesBot.exe"

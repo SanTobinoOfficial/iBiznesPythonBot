@@ -73,6 +73,16 @@ jobs:
         run: choco install innosetup -y --no-progress
         shell: cmd
 
+      # ── 6b. Wstrzyknij wersję z version.txt do setup.iss ───────────────────
+      - name: Zaktualizuj wersję w setup.iss
+        run: |
+          $v = (Get-Content version.txt -Raw).Trim()
+          (Get-Content installer\setup.iss -Raw) `
+            -replace '#define AppVersion\s+"[0-9.]+"', "#define AppVersion   `"$v`"" `
+            | Set-Content installer\setup.iss -NoNewline
+          echo "Wersja w setup.iss: $v"
+        shell: pwsh
+
       # ── 7. Skompiluj instalator .exe ───────────────────────────────────────
       - name: Kompiluj installer (Inno Setup)
         run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss'
