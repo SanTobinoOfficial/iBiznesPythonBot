@@ -290,10 +290,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
       </div>
       <!-- wynik konwersji -->
       <div id="safeConvertResult" style="display:none;margin-top:12px;padding:10px 14px;border-radius:var(--r);background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.25);font-size:12px">
-        <span id="safeConvertIcon">✅</span>
-        <span id="safeConvertText"></span>
-        <div style="margin-top:8px">
-          <button class="btn-sm" id="safeDownloadBtn" style="background:rgba(167,139,250,.15);color:var(--accent3);border:1px solid rgba(167,139,250,.3)">⬇ Pobierz iBiznes.xls</button>
+        <div style="margin-bottom:6px"><span id="safeConvertIcon">✅</span> <span id="safeConvertText"></span></div>
+        <div id="safeMdbStatus" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
+        <div class="btn-row" style="margin:0;gap:6px">
+          <button class="btn-sm" id="safeDownloadBtn" style="background:rgba(167,139,250,.15);color:var(--accent3);border:1px solid rgba(167,139,250,.3)">⬇ Import iBiznes.xls</button>
+          <button class="btn-sm" id="safeCompareBtn" style="display:none;background:rgba(34,197,94,.1);color:var(--ok);border:1px solid rgba(34,197,94,.3)">⬇ Porównanie z bazą.xls</button>
         </div>
       </div>
     </div>
@@ -1296,11 +1297,30 @@ async function runSafeConvert() {
     $('safeConvertIcon').textContent = '✅';
     $('safeConvertText').innerHTML =
       `Wygenerowano <strong>${d.filename}</strong> · ${d.items} pozycji · kurs ${d.rate?.toFixed(4)} PLN/${d.currency}`;
-    $('safeDownloadBtn').onclick = () => {
-      window.location = `${API}${d.downloadUrl}`;
-    };
+    $('safeDownloadBtn').onclick = () => { window.location = `${API}${d.downloadUrl}`; };
+
+    // Status bazy MDB
+    const mdbEl = $('safeMdbStatus');
+    if (d.mdbFound) {
+      mdbEl.style.color = 'var(--ok)';
+      mdbEl.textContent = 'Baza: ' + d.mdbPath;
+    } else {
+      mdbEl.style.color = 'var(--muted)';
+      mdbEl.textContent = 'Baza MDB: nie znaleziono – brak porównania cen';
+    }
+
+    // Przycisk porównania
+    const cmpBtn = $('safeCompareBtn');
+    if (d.compareUrl) {
+      cmpBtn.style.display = '';
+      cmpBtn.onclick = () => { window.location = `${API}${d.compareUrl}`; };
+    } else {
+      cmpBtn.style.display = 'none';
+    }
+
     $('safeConvertResult').style.display = 'block';
-    toast(`Gotowe: ${d.items} pozycji → ${d.filename}`, 'ok', 5000);
+    const extra = d.compareUrl ? ' + porównanie z bazą' : '';
+    toast(`Gotowe: ${d.items} pozycji → ${d.filename}${extra}`, 'ok', 5000);
   } catch(e) {
     $('safeConvertIcon').textContent = '❌';
     $('safeConvertText').innerHTML = `Błąd: <strong>${e.message}</strong>`;

@@ -28,7 +28,7 @@ import requests
 from flask import Flask, Response, jsonify, request, send_file, send_from_directory
 from flask_cors import CORS
 
-from pdf_to_csv import InvoicePDFParser, CSVExporter
+from pdf_to_csv import InvoicePDFParser, CSVExporter, autodetect_mdb
 
 # ── ŚCIEŻKI ────────────────────────────────────────────────────────────────────
 
@@ -265,6 +265,14 @@ class DiscordWebhook:
 def _get_discord() -> DiscordWebhook:
     """Zwraca instancję DiscordWebhook na podstawie aktualnej konfiguracji."""
     return DiscordWebhook(load_config().get("discordWebhookUrl", ""))
+
+
+def _get_mdb_path() -> str:
+    """Zwraca ścieżkę do bazy .mdb: z config lub auto-wykryta."""
+    cfg_path = load_config().get("bazaMdbPath", "")
+    if cfg_path and os.path.isfile(cfg_path):
+        return cfg_path
+    return autodetect_mdb()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1027,22 +1035,39 @@ def api_safe_convert():
         else:
             return jsonify({"ok": False, "error": "Plik musi być PDF lub CSV."}), 400
 
-        mdb_path   = load_config().get("bazaMdbPath", "")
-        exporter   = CSVExporter(items, header, mdb_path=mdb_path)
-        xls_name   = safe_name.rsplit(".", 1)[0] + "_ibiznes.xls"
-        xls_path   = os.path.join(UPLOADS_DIR, xls_name)
+        mdb_path = _get_mdb_path()
+        exporter = CSVExporter(items, header, mdb_path=mdb_path)
+
+        base_name = safe_name.rsplit(".", 1)[0]
+
+        # XLS importu iBiznes (24 kolumny)
+        xls_name = base_name + "_ibiznes.xls"
+        xls_path = os.path.join(UPLOADS_DIR, xls_name)
         exporter.to_ibiznes_xls(xls_path, currency=currency, rate=rate)
 
+        # XLS porównania z bazą (tylko jeśli MDB dostępne)
+        cmp_url = None
+        cmp_name = None
+        if mdb_path:
+            cmp_name = base_name + "_porownanie.xls"
+            cmp_path = os.path.join(UPLOADS_DIR, cmp_name)
+            exporter.to_comparison_xls(cmp_path, currency=currency, rate=rate)
+            cmp_url = f"/api/download?path={urllib.parse.quote(cmp_path)}"
+
         download_url = f"/api/download?path={urllib.parse.quote(xls_path)}"
-        log.info(f"Safe-convert OK: {xls_path} ({len(items)} pozycji, kurs={rate})")
+        log.info(f"Safe-convert OK: {xls_path} ({len(items)} pozycji, kurs={rate}, mdb={bool(mdb_path)})")
 
         return jsonify({
-            "ok":          True,
-            "downloadUrl": download_url,
-            "filename":    xls_name,
-            "items":       len(items),
-            "currency":    currency,
-            "rate":        rate,
+            "ok":              True,
+            "downloadUrl":     download_url,
+            "filename":        xls_name,
+            "compareUrl":      cmp_url,
+            "compareFilename": cmp_name,
+            "mdbFound":        bool(mdb_path),
+            "mdbPath":         mdb_path,
+            "items":           len(items),
+            "currency":        currency,
+            "rate":            rate,
         })
 
     except ImportError as e:

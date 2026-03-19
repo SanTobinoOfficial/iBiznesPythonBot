@@ -22,62 +22,131 @@ import pdfplumber
 # LOOKUP NAZW Z BAZY iBIZNES (.mdb)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _load_ibiznes_names(mdb_path: str) -> Dict[str, str]:
+def autodetect_mdb() -> str:
     """
-    Wczytuje polskie nazwy produktow z bazy iBiznes (Microsoft Access .mdb).
-    Zwraca slownik {kod_5cyfr: 'Polska nazwa'} lub {} jesli brak pliku/sterownika.
-
-    Wymaga: Microsoft Access Database Engine 2016 x64
-    Pobierz: https://www.microsoft.com/en-us/download/details.aspx?id=54920
+    Automatycznie szuka bazy iBiznes (.mdb) w typowych lokalizacjach.
+    Zwraca pełną ścieżkę lub '' jeśli nie znaleziono.
     """
-    if not mdb_path or not os.path.isfile(mdb_path):
-        return {}
+    import glob
+    candidates = []
 
+    # Typowe lokalizacje firm iBiznes – katalog użytkownika i dyski
+    home = os.path.expanduser("~")
+    for pattern in [
+        os.path.join(home, "firmatec", "baza.mdb"),
+        os.path.join(home, "firmatec", "*.mdb"),
+        os.path.join(home, "ibiznes", "*.mdb"),
+        os.path.join(home, "iBiznes", "*.mdb"),
+        r"C:\firmatec\baza.mdb",
+        r"C:\firmatec\*.mdb",
+        r"C:\ibiznes\*.mdb",
+        r"C:\iBiznes\*.mdb",
+        r"C:\Program Files (x86)\firmatec\*.mdb",
+        r"C:\Program Files\firmatec\*.mdb",
+    ]:
+        candidates.extend(glob.glob(pattern))
+
+    # Szukaj na wszystkich dyskach C–Z
+    import string
+    for drive in string.ascii_uppercase[2:8]:  # C..H
+        for pattern in [
+            f"{drive}:\\firmatec\\baza.mdb",
+            f"{drive}:\\firmatec\\*.mdb",
+            f"{drive}:\\ibiznes\\*.mdb",
+        ]:
+            candidates.extend(glob.glob(pattern))
+
+    for path in candidates:
+        if os.path.isfile(path):
+            log.info(f"MDB auto-wykryto: {path}")
+            return path
+
+    log.warning("MDB: nie znaleziono bazy automatycznie")
+    return ""
+
+
+def _connect_mdb(mdb_path: str):
+    """Zwraca otwarte połączenie pyodbc do pliku .mdb lub None."""
     try:
         import pyodbc
     except ImportError:
-        log.warning("pyodbc nie zainstalowane – polskie nazwy z MDB niedostepne.")
-        return {}
-
+        log.warning("pyodbc nie zainstalowane – baza MDB niedostepna.")
+        return None
+    if not mdb_path or not os.path.isfile(mdb_path):
+        return None
     conn_str = (
         r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
         f"DBQ={mdb_path};"
     )
+    try:
+        return pyodbc.connect(conn_str, timeout=5)
+    except Exception as e:
+        log.warning(f"MDB: blad polaczenia ({e})")
+        return None
+
+
+def _load_ibiznes_names(mdb_path: str) -> Dict[str, str]:
+    """
+    Wczytuje polskie nazwy produktow z bazy iBiznes (firmatowary).
+    Zwraca slownik {kod_5cyfr: 'Polska nazwa'} lub {}.
+    """
+    conn = _connect_mdb(mdb_path)
+    if not conn:
+        return {}
     names: Dict[str, str] = {}
     try:
-        conn = pyodbc.connect(conn_str, timeout=5)
-        cur  = conn.cursor()
-
-        # Typowe tabele iBiznes dla kartoteki produktow
-        table_candidates    = ["Kartoteka", "Towar", "Towary", "Artykul", "Produkty"]
-        code_col_candidates = ["Symbol", "Kod", "Nr_katalogowy", "KodProduktu"]
-
-        for table in table_candidates:
-            for code_col in code_col_candidates:
-                try:
-                    cur.execute(f"SELECT [{code_col}], [Nazwa] FROM [{table}]")
-                    for row in cur.fetchall():
-                        if row[0] and row[1]:
-                            kod = str(row[0]).strip()[:5]
-                            if kod.isdigit():
-                                names[kod] = str(row[1]).strip()
-                    if names:
-                        log.info(f"MDB: wczytano {len(names)} nazw z {table}.{code_col}")
-                        conn.close()
-                        return names
-                except Exception:
-                    pass
-
-        conn.close()
-        if not names:
-            log.warning(f"MDB: nie znaleziono tabeli produktow w {mdb_path}")
+        cur = conn.cursor()
+        # firmatowary: Kod (5-cyfrowy), Nazw (pełna nazwa po polsku)
+        cur.execute("SELECT Kod, Nazw FROM firmatowary WHERE Akt <> 'N' OR Akt IS NULL")
+        for row in cur.fetchall():
+            if row[0] and row[1]:
+                kod = str(row[0]).strip()[:5]
+                if kod.isdigit():
+                    names[kod] = str(row[1]).strip()
+        log.info(f"MDB: wczytano {len(names)} nazw z firmatowary ({mdb_path})")
     except Exception as e:
-        log.warning(
-            f"MDB: blad polaczenia ({e}). "
-            "Zainstaluj Microsoft Access Database Engine 2016 x64: "
-            "https://www.microsoft.com/en-us/download/details.aspx?id=54920"
-        )
+        log.warning(f"MDB _load_ibiznes_names blad: {e}")
+    finally:
+        conn.close()
     return names
+
+
+def _load_ibiznes_data(mdb_path: str) -> Dict[str, Dict]:
+    """
+    Wczytuje pełne dane produktów z firmatowary.
+    Zwraca {kod5: {'nazwa': str, 'cd': float, 'cn1': float, 'jm': str, 'vat': float}}
+    """
+    conn = _connect_mdb(mdb_path)
+    if not conn:
+        return {}
+    data: Dict[str, Dict] = {}
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT Kod, Nazw, Cd, CN1, JM, Vat
+            FROM firmatowary
+            WHERE (Akt <> 'N' OR Akt IS NULL)
+              AND (Anul <> 'T' OR Anul IS NULL)
+        """)
+        for row in cur.fetchall():
+            if not row[0]:
+                continue
+            kod = str(row[0]).strip()[:5]
+            if not kod.isdigit():
+                continue
+            data[kod] = {
+                "nazwa": str(row[1]).strip() if row[1] else "",
+                "cd":    float(row[2]) if row[2] is not None else 0.0,
+                "cn1":   float(row[3]) if row[3] is not None else 0.0,
+                "jm":    str(row[4]).strip() if row[4] else "szt",
+                "vat":   float(row[5]) if row[5] is not None else 23.0,
+            }
+        log.info(f"MDB: wczytano {len(data)} produktów z firmatowary")
+    except Exception as e:
+        log.warning(f"MDB _load_ibiznes_data blad: {e}")
+    finally:
+        conn.close()
+    return data
 
 # ── konfiguracja ──────────────────────────────────────────────────────────────
 _DATA_DIR = os.path.join(os.environ.get('APPDATA', '.'), 'iBiznesBot')
@@ -429,9 +498,14 @@ class CSVExporter:
     """Eksportuje sparsowane pozycje do pliku CSV."""
 
     def __init__(self, items: List[Dict], header: Dict, mdb_path: str = "") -> None:
-        self.items      = items
-        self.header     = header
-        self._mdb_names = _load_ibiznes_names(mdb_path) if mdb_path else {}
+        self.items    = items
+        self.header   = header
+        self._mdb_path = mdb_path
+        if mdb_path:
+            self._mdb_data = _load_ibiznes_data(mdb_path)
+        else:
+            self._mdb_data = {}
+        self._mdb_names = {k: v["nazwa"] for k, v in self._mdb_data.items()}
 
     def _get_nazwa(self, item: Dict) -> str:
         """Zwraca polska nazwe z MDB (jesli dostepna) lub oryginalna z PDF."""
@@ -550,6 +624,140 @@ class CSVExporter:
 
         wb.save(output_path)
         log.info(f"XLS iBiznes zapisany: {output_path} ({len(self.items)} pozycji)")
+        return output_path
+
+    def to_comparison_xls(self, output_path: str, currency: str = "USD", rate: float = 1.0) -> str:
+        """
+        Generuje plik XLS z porównaniem faktury z bazą danych (firmatowary).
+        Kolumny: Kod | Nazwa (faktura) | Nazwa (baza) | Ilość | Cena fakt. USD |
+                 Cena fakt. PLN | Cena zakupu (baza Cd) | Różnica PLN | Status | JM (baza)
+        Wiersze kolorowane: zielony=OK, żółty=brak w bazie, czerwony=różnica ceny.
+        """
+        try:
+            import xlwt
+        except ImportError:
+            raise ImportError("Zainstaluj xlwt: pip install xlwt")
+
+        if not self.items:
+            raise ValueError("Brak pozycji do eksportu.")
+
+        wb  = xlwt.Workbook(encoding="utf-8")
+        ws  = wb.add_sheet("Porównanie faktury z bazą")
+
+        # Style
+        def make_style(bg_color=None, bold=False):
+            style = xlwt.XFStyle()
+            font = xlwt.Font()
+            font.bold = bold
+            style.font = font
+            if bg_color is not None:
+                pattern = xlwt.Pattern()
+                pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+                pattern.pattern_fore_colour = bg_color
+                style.pattern = pattern
+            borders = xlwt.Borders()
+            borders.bottom = xlwt.Borders.THIN
+            style.borders = borders
+            return style
+
+        HDR_COLOR  = 0x16   # ciemnoniebieski
+        OK_COLOR   = 0x32   # zielony jasny  (xlwt: 50)
+        WARN_COLOR = 0x0D   # żółty          (xlwt: 13)
+        ERR_COLOR  = 0x0A   # czerwony jasny (xlwt: 10)
+        NO_COLOR   = None
+
+        style_hdr  = make_style(HDR_COLOR, bold=True)
+        style_ok   = make_style(OK_COLOR)
+        style_warn = make_style(WARN_COLOR)
+        style_err  = make_style(ERR_COLOR)
+        style_norm = make_style(NO_COLOR)
+
+        # Nagłówek
+        inv_nr   = self.header.get("invoice_nr", "")
+        supplier = self.header.get("supplier", "")
+        discount = self.header.get("discount", 0) or 0
+
+        headers = [
+            "Kod",
+            "Nazwa (faktura)",
+            "Nazwa (baza)",
+            "Ilość",
+            f"Cena {currency} (fakt.)",
+            "Cena PLN (fakt.)",
+            "Cena zakupu (baza Cd)",
+            "Różnica PLN",
+            "Status",
+            "JM (baza)",
+        ]
+        for col, h in enumerate(headers):
+            ws.write(0, col, h, style_hdr)
+
+        # Szerokości kolumn (w znakach *256)
+        col_widths = [10, 45, 45, 8, 14, 14, 16, 12, 18, 8]
+        for col, w in enumerate(col_widths):
+            ws.col(col).width = w * 256
+
+        PRICE_TOL = 0.02  # tolerancja różnicy ceny [PLN]
+
+        stats = {"ok": 0, "brak": 0, "roznica": 0}
+        for row_idx, item in enumerate(self.items, 1):
+            kod5      = str(item["kod_produktu"])[:5]
+            inv_usd   = round(float(item.get("cena_netto_usd", 0)), 4)
+            inv_pln   = round(inv_usd * rate, 2)
+            qty       = item.get("ilosc", 1)
+            qty_val   = int(qty) if qty == int(qty) else qty
+
+            db_row    = self._mdb_data.get(kod5, {})
+            db_nazwa  = db_row.get("nazwa", "")
+            db_cd     = db_row.get("cd", None)    # cena zakupu PLN
+            db_jm     = db_row.get("jm", "")
+
+            if not db_row:
+                status = "BRAK W BAZIE"
+                styl   = style_warn
+                stats["brak"] += 1
+                diff = ""
+            elif db_cd is not None:
+                diff = round(inv_pln - db_cd, 4)
+                if abs(diff) <= PRICE_TOL:
+                    status = "OK"
+                    styl   = style_ok
+                    stats["ok"] += 1
+                else:
+                    status = f"RÓŻNICA {diff:+.2f} PLN"
+                    styl   = style_err
+                    stats["roznica"] += 1
+            else:
+                status = "OK (brak ceny w bazie)"
+                styl   = style_ok
+                stats["ok"] += 1
+                diff = ""
+
+            ws.write(row_idx, 0, item["kod_produktu"], styl)
+            ws.write(row_idx, 1, item.get("nazwa", ""),  styl)
+            ws.write(row_idx, 2, db_nazwa,               styl)
+            ws.write(row_idx, 3, qty_val,                styl)
+            ws.write(row_idx, 4, inv_usd,                styl)
+            ws.write(row_idx, 5, inv_pln,                styl)
+            ws.write(row_idx, 6, db_cd if db_cd is not None else "", styl)
+            ws.write(row_idx, 7, diff,                   styl)
+            ws.write(row_idx, 8, status,                 styl)
+            ws.write(row_idx, 9, db_jm,                  styl)
+
+        # Wiersz podsumowania
+        sum_row = len(self.items) + 2
+        ws.write(sum_row, 0, "PODSUMOWANIE", make_style(HDR_COLOR, bold=True))
+        ws.write(sum_row, 1, f"Faktura: {inv_nr}  Dostawca: {supplier}  Kurs: {rate}  Rabat: {discount}%", style_norm)
+        ws.write(sum_row + 1, 0, f"OK: {stats['ok']}", style_ok)
+        ws.write(sum_row + 1, 1, f"Brak w bazie: {stats['brak']}", style_warn)
+        ws.write(sum_row + 1, 2, f"Różnica ceny: {stats['roznica']}", style_err)
+
+        wb.save(output_path)
+        log.info(
+            f"XLS porównanie zapisany: {output_path} "
+            f"({len(self.items)} pozycji, OK={stats['ok']}, "
+            f"brak={stats['brak']}, roznica={stats['roznica']})"
+        )
         return output_path
 
     def to_csv(self, output_path: str) -> str:
