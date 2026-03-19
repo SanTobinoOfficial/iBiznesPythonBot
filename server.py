@@ -589,6 +589,9 @@ class JobRunner:
             return False
 
         try:
+            # BUG1 FIX: zawsze kopiuj najnowszy AHK script do AppData przed uruchomieniem
+            _deploy_file("ibiznes.ahk")
+            _deploy_file("ibiznes_gui.ahk")
             subprocess.Popen(
                 [ahk_exe, AHK_SCRIPT, TASK_FILE],
                 creationflags=subprocess.CREATE_NEW_CONSOLE
@@ -973,6 +976,10 @@ def api_run_ahk_gui():
         os.remove(RESULT_FILE)
     with open(TASK_FILE, "w", encoding="utf-8") as f:
         json.dump(task, f, ensure_ascii=False, indent=2)
+
+    # BUG1 FIX: zawsze kopiuj najnowszy AHK script do AppData przed uruchomieniem
+    _deploy_file("ibiznes.ahk")
+    _deploy_file("ibiznes_gui.ahk")
 
     log.info(f"AHK GUI: task.json zapisany ({len(task['items'])} pozycji, faktura={invoice_nr})")
     return jsonify({

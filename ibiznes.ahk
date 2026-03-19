@@ -343,8 +343,10 @@ try {
     ClickAt(892, 412)
     Send("^a")
     Sleep(100)
-    LogMsg("[KROK 17c] Wpisuję rabat: " discount)
-    Send(discount)
+    ; BUG7 FIX: zawsze wysyłamy jako string bez części ułamkowej
+    discountStr := String(Integer(Round(discount)))
+    LogMsg("[KROK 17c] Wpisuję rabat: " discountStr)
+    Send(discountStr)
     Sleep(D["afterType"])
     LogMsg("[KROK 17d] Kliknij OK rabatu (933, 410)")
     ClickAt(933, 410)
@@ -533,10 +535,13 @@ ReadFieldViaClipboard() {
     prevClip    := A_Clipboard
     A_Clipboard := ""
     Send("^a^c")
-    ClipWait(1.5)
+    ; BUG8 FIX: sprawdzamy czy clipboard się faktycznie zmienił (ClipWait zwraca 0 = timeout)
+    ok := ClipWait(2.0)
+    if !ok
+        LogMsg("    [CLIP] UWAGA: timeout czekania na clipboard – cena może być błędna")
     result      := A_Clipboard
     A_Clipboard := prevClip
-    LogMsg("    [CLIP] Odczytano: '" result "'")
+    LogMsg("    [CLIP] Odczytano: '" result "'" (ok ? "" : " [TIMEOUT]"))
     return result
 }
 
@@ -621,6 +626,10 @@ class JsonBool {
 }
 
 ; ── Minimalna implementacja JSON dla AHK v2 ──────────────────────────────────
+; BUG2 FIX: _parseNumber sprawdza puste n
+; BUG3 FIX: _parseObject/Array mają guard p > StrLen(s) – brak nieskończonej pętli
+; BUG5 FIX: _parseString ternary zastąpiony if-else (brak problemów z kontynuacją linii)
+; BUG6 FIX: _parseString obsługuje \uXXXX (skip 4 hex cyfr)
 class JSON {
     static parse(str) {
         pos := 1
@@ -633,22 +642,15 @@ class JSON {
 
     static _parseValue(s, &p) {
         JSON._skipWS(s, &p)
-        c := SubStr(s, p, 1)
-        if (c = '"')  return JSON._parseString(s, &p)
-        if (c = '{')  return JSON._parseObject(s, &p)
-        if (c = '[')  return JSON._parseArray(s, &p)
-        if (c = 't') {
-            p += 4
-            return true
-        }
-        if (c = 'f') {
-            p += 5
-            return false
-        }
-        if (c = 'n') {
-            p += 4
+        if p > StrLen(s)
             return ""
-        }
+        c := SubStr(s, p, 1)
+        if (c = '"') return JSON._parseString(s, &p)
+        if (c = '{') return JSON._parseObject(s, &p)
+        if (c = '[') return JSON._parseArray(s, &p)
+        if (c = 't') { p += 4 ; return true }
+        if (c = 'f') { p += 5 ; return false }
+        if (c = 'n') { p += 4 ; return "" }
         return JSON._parseNumber(s, &p)
     }
 
@@ -662,14 +664,29 @@ class JSON {
         result := ""
         while (p <= StrLen(s)) {
             c := SubStr(s, p, 1)
-            if (c = '"')  { p++ ; return result }
+            if (c = '"') {
+                p++
+                return result
+            }
             if (c = '\') {
                 p++
                 ec := SubStr(s, p, 1)
-                result .= (ec = 'n') ? '`n'
-                        : (ec = 't') ? '`t'
-                        : (ec = 'r') ? '`r'
-                        : ec
+                ; BUG5 FIX: if-else zamiast wieloliniowego ternary
+                ; BUG6 FIX: \uXXXX – pomijamy 4 cyfry hex, nie dodajemy 'u' do wyniku
+                if (ec = 'n')
+                    result .= '`n'
+                else if (ec = 't')
+                    result .= '`t'
+                else if (ec = 'r')
+                    result .= '`r'
+                else if (ec = 'u') {
+                    p += 4  ; pomiń 4 cyfry hex (\uXXXX)
+                    ; (pomijamy znak Unicode – brak wsparcia w AHK string)
+                }
+                else if (ec = '"' || ec = '\' || ec = '/')
+                    result .= ec
+                else
+                    result .= ec
             } else {
                 result .= c
             }
@@ -680,10 +697,20 @@ class JSON {
 
     static _parseNumber(s, &p) {
         start := p
-        while (p <= StrLen(s) && InStr("0123456789.-eE+", SubStr(s, p, 1)))
+        ; Obsłuż znak minus na początku
+        if (SubStr(s, p, 1) = '-')
+            p++
+        while (p <= StrLen(s) && InStr("0123456789.eE+", SubStr(s, p, 1)))
             p++
         n := SubStr(s, start, p - start)
-        return InStr(n, '.') ? Float(n) : Integer(n)
+        ; BUG2 FIX: puste n (błędny JSON) → zwróć 0 zamiast crash
+        if StrLen(n) = 0
+            return 0
+        try {
+            return InStr(n, '.') || InStr(n, 'e') || InStr(n, 'E') ? Float(n) : Integer(n)
+        } catch {
+            return 0
+        }
     }
 
     static _parseObject(s, &p) {
@@ -691,18 +718,29 @@ class JSON {
         obj := Map()
         JSON._skipWS(s, &p)
         if (SubStr(s, p, 1) = '}') { p++ ; return obj }
+        ; BUG3 FIX: guard na koniec stringa – zapobiega nieskończonej pętli
         loop {
+            if p > StrLen(s)
+                break
             JSON._skipWS(s, &p)
+            if p > StrLen(s)
+                break
             key := JSON._parseString(s, &p)
             JSON._skipWS(s, &p)
             p++   ; ':'
             val := JSON._parseValue(s, &p)
             obj[key] := val
             JSON._skipWS(s, &p)
+            if p > StrLen(s)
+                break
             c := SubStr(s, p, 1)
             p++
             if (c = '}') return obj
+            ; c = ',' → kontynuuj, inne znaki → przerywamy (błędny JSON)
+            if (c != ',')
+                break
         }
+        return obj
     }
 
     static _parseArray(s, &p) {
@@ -710,13 +748,22 @@ class JSON {
         arr := []
         JSON._skipWS(s, &p)
         if (SubStr(s, p, 1) = ']') { p++ ; return arr }
+        ; BUG4 FIX: guard na koniec stringa – zapobiega nieskończonej pętli
         loop {
+            if p > StrLen(s)
+                break
             arr.Push(JSON._parseValue(s, &p))
             JSON._skipWS(s, &p)
+            if p > StrLen(s)
+                break
             c := SubStr(s, p, 1)
             p++
             if (c = ']') return arr
+            ; c = ',' → kontynuuj, inne znaki → przerywamy (błędny JSON)
+            if (c != ',')
+                break
         }
+        return arr
     }
 
     static _serializeValue(val) {

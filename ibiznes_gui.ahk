@@ -289,7 +289,11 @@ _JsonStr(s) {
 }
 
 ; ============================================================================
-; JSON – minimalna implementacja (taka sama jak w ibiznes.ahk)
+; JSON – minimalna implementacja z poprawionymi bugami (identyczna jak ibiznes.ahk)
+; BUG2: _parseNumber guard na puste n
+; BUG3/4: _parseObject/_parseArray guard p > StrLen(s)
+; BUG5: _parseString if-else zamiast wieloliniowego ternary
+; BUG6: _parseString obsługuje \uXXXX
 ; ============================================================================
 
 class JsonBool {
@@ -308,10 +312,12 @@ class JSON {
 
     static _parseValue(s, &p) {
         JSON._skipWS(s, &p)
+        if p > StrLen(s)
+            return ""
         c := SubStr(s, p, 1)
-        if (c = '"')  return JSON._parseString(s, &p)
-        if (c = '{')  return JSON._parseObject(s, &p)
-        if (c = '[')  return JSON._parseArray(s, &p)
+        if (c = '"') return JSON._parseString(s, &p)
+        if (c = '{') return JSON._parseObject(s, &p)
+        if (c = '[') return JSON._parseArray(s, &p)
         if (c = 't') { p += 4 ; return true }
         if (c = 'f') { p += 5 ; return false }
         if (c = 'n') { p += 4 ; return "" }
@@ -328,14 +334,23 @@ class JSON {
         result := ""
         while (p <= StrLen(s)) {
             c := SubStr(s, p, 1)
-            if (c = '"')  { p++ ; return result }
+            if (c = '"') {
+                p++
+                return result
+            }
             if (c = '\') {
                 p++
                 ec := SubStr(s, p, 1)
-                result .= (ec = 'n') ? '`n'
-                        : (ec = 't') ? '`t'
-                        : (ec = 'r') ? '`r'
-                        : ec
+                if (ec = 'n')
+                    result .= '`n'
+                else if (ec = 't')
+                    result .= '`t'
+                else if (ec = 'r')
+                    result .= '`r'
+                else if (ec = 'u')
+                    p += 4  ; pomiń \uXXXX – brak natywnego Unicode w AHK stringach
+                else
+                    result .= ec
             } else {
                 result .= c
             }
@@ -346,10 +361,18 @@ class JSON {
 
     static _parseNumber(s, &p) {
         start := p
-        while (p <= StrLen(s) && InStr("0123456789.-eE+", SubStr(s, p, 1)))
+        if (SubStr(s, p, 1) = '-')
+            p++
+        while (p <= StrLen(s) && InStr("0123456789.eE+", SubStr(s, p, 1)))
             p++
         n := SubStr(s, start, p - start)
-        return InStr(n, '.') ? Float(n) : Integer(n)
+        if StrLen(n) = 0
+            return 0
+        try {
+            return InStr(n, '.') || InStr(n, 'e') || InStr(n, 'E') ? Float(n) : Integer(n)
+        } catch {
+            return 0
+        }
     }
 
     static _parseObject(s, &p) {
@@ -358,17 +381,25 @@ class JSON {
         JSON._skipWS(s, &p)
         if (SubStr(s, p, 1) = '}') { p++ ; return obj }
         loop {
+            if p > StrLen(s)
+                break
             JSON._skipWS(s, &p)
+            if p > StrLen(s)
+                break
             key := JSON._parseString(s, &p)
             JSON._skipWS(s, &p)
-            p++   ; ':'
+            p++
             val := JSON._parseValue(s, &p)
             obj[key] := val
             JSON._skipWS(s, &p)
+            if p > StrLen(s)
+                break
             c := SubStr(s, p, 1)
             p++
             if (c = '}') return obj
+            if (c != ',') break
         }
+        return obj
     }
 
     static _parseArray(s, &p) {
@@ -377,12 +408,18 @@ class JSON {
         JSON._skipWS(s, &p)
         if (SubStr(s, p, 1) = ']') { p++ ; return arr }
         loop {
+            if p > StrLen(s)
+                break
             arr.Push(JSON._parseValue(s, &p))
             JSON._skipWS(s, &p)
+            if p > StrLen(s)
+                break
             c := SubStr(s, p, 1)
             p++
             if (c = ']') return arr
+            if (c != ',') break
         }
+        return arr
     }
 
     static _serializeValue(val) {
