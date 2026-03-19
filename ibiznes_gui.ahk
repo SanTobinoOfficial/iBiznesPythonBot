@@ -318,9 +318,18 @@ class JSON {
         if (c = '"') return JSON._parseString(s, &p)
         if (c = '{') return JSON._parseObject(s, &p)
         if (c = '[') return JSON._parseArray(s, &p)
-        if (c = 't') { p += 4 ; return true }
-        if (c = 'f') { p += 5 ; return false }
-        if (c = 'n') { p += 4 ; return "" }
+        if (c = 't') {
+            p += 4
+            return true
+        }
+        if (c = 'f') {
+            p += 5
+            return false
+        }
+        if (c = 'n') {
+            p += 4
+            return ""
+        }
         return JSON._parseNumber(s, &p)
     }
 
@@ -379,7 +388,10 @@ class JSON {
         p++
         obj := Map()
         JSON._skipWS(s, &p)
-        if (SubStr(s, p, 1) = '}') { p++ ; return obj }
+        if (SubStr(s, p, 1) = '}') {
+            p++
+            return obj
+        }
         loop {
             if p > StrLen(s)
                 break
@@ -406,7 +418,10 @@ class JSON {
         p++
         arr := []
         JSON._skipWS(s, &p)
-        if (SubStr(s, p, 1) = ']') { p++ ; return arr }
+        if (SubStr(s, p, 1) = ']') {
+            p++
+            return arr
+        }
         loop {
             if p > StrLen(s)
                 break
