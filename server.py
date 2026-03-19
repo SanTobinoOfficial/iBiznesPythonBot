@@ -43,18 +43,31 @@ DATA_DIR    = os.path.join(os.environ.get('APPDATA', '.'), 'iBiznesBot')
 UPLOADS_DIR = os.path.join(DATA_DIR, 'uploads')
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
+def _deploy_file(name: str) -> None:
+    """Kopiuje plik z bundle/source do DataDir jeśli źródło jest nowsze."""
+    src = resource_path(name)
+    dst = os.path.join(DATA_DIR, name)
+    if os.path.isfile(src):
+        if not os.path.isfile(dst) or os.path.getmtime(src) > os.path.getmtime(dst):
+            import shutil
+            shutil.copy2(src, dst)
+
+for _f in ("ibiznes.ahk", "ibiznes_gui.ahk", "coords.json"):
+    _deploy_file(_f)
+
 LOG_FILE          = os.path.join(DATA_DIR, "server.log")
 CONFIG_FILE       = os.path.join(DATA_DIR, "config.json")
 HISTORY_FILE      = os.path.join(DATA_DIR, "history.json")
 PRICE_ALERTS_FILE = os.path.join(DATA_DIR, "price_alerts.txt")
 AHK_SCRIPT        = os.path.join(DATA_DIR, "ibiznes.ahk")
+AHK_GUI_SCRIPT    = os.path.join(DATA_DIR, "ibiznes_gui.ahk")
 TASK_FILE         = os.path.join(DATA_DIR, "task.json")
 RESULT_FILE       = os.path.join(DATA_DIR, "result.json")
 COORDS_FILE       = os.path.join(DATA_DIR, "coords.json")
 
 NBP_API           = "https://api.nbp.pl/api/exchangerates/rates/a/{}//?format=json"
 GITHUB_RELEASES   = "https://api.github.com/repos/SanTobinoOfficial/iBiznesPythonBot/releases/latest"
-VERSION           = "3.2.2"
+VERSION           = "3.3.0"
 
 DEFAULT_COORDS = {
     "_comment":     "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",
@@ -471,6 +484,7 @@ class JobRunner:
                 "usdRate":           rate,
                 "currency":          currency,
                 "discount":          int(self.payload.get("discount", 0) or 0),
+                "skipLaunch":        bool(self.payload.get("skipLaunch", False)),
                 "runMode":           run_mode,
                 "diagMode":          diag,
                 "autoOpenIBiznes":   self.config.get("autoOpenIBiznes", True),
@@ -865,6 +879,109 @@ def api_discord_test():
         "footer": {"text": f"iBiznes Bot v{VERSION}"},
     }])
     return jsonify({"ok": True, "message": "Testowe powiadomienie wysłane."})
+
+
+@app.route("/api/run-ahk-gui", methods=["POST"])
+def api_run_ahk_gui():
+    """
+    Endpoint wywoływany przez ibiznes_gui.ahk (Tryb AHK GUI).
+    Parsuje PDF z podanej ścieżki, tworzy task.json z skipLaunch=true.
+    AHK GUI sam uruchamia ibiznes.ahk po otrzymaniu 200 OK.
+    JSON: {"pdfPath": "...", "currency": "USD", "usdRate": 0, "discount": 8,
+           "nip": "", "skipLaunch": true}
+    """
+    data      = request.get_json(force=True) or {}
+    pdf_path  = data.get("pdfPath", "")
+    currency  = data.get("currency", "USD")
+    usd_rate  = float(data.get("usdRate", 0) or 0)
+    discount  = int(data.get("discount", 8) or 8)
+    nip       = data.get("nip", "")
+
+    if not pdf_path or not os.path.isfile(pdf_path):
+        return jsonify({"ok": False, "error": f"Plik PDF nie istnieje: {pdf_path}"}), 400
+
+    try:
+        parser = InvoicePDFParser(pdf_path)
+        items  = parser.parse()
+        if not items:
+            return jsonify({"ok": False, "error": "Nie znaleziono pozycji w PDF."}), 422
+    except Exception as e:
+        log.exception("Blad parsowania PDF (run-ahk-gui)")
+        return jsonify({"ok": False, "error": f"Błąd parsowania PDF: {e}"}), 500
+
+    cfg      = load_config()
+    exe_path = cfg.get("exePath", "") or autodetect_ibiznes() or ""
+
+    if not usd_rate:
+        try:
+            r = requests.get(NBP_API.format(currency.lower()), timeout=8)
+            r.raise_for_status()
+            usd_rate = float(r.json()["rates"][0]["mid"])
+        except Exception:
+            usd_rate = 4.05
+
+    header      = parser.header
+    invoice_nr  = header.get("invoice_nr", "")
+    if not discount:
+        discount = int(header.get("discount", 8) or 8)
+
+    task = {
+        "jobId":             f"ahk-gui-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        "nip":               nip or header.get("nip", ""),
+        "invoiceNr":         invoice_nr,
+        "invoiceDate":       header.get("invoice_date", ""),
+        "supplier":          nip,
+        "supplierSearch":    cfg.get("supplierSearch", "levior"),
+        "exePath":           exe_path,
+        "tolerance":         float(cfg.get("tolerance", 0.05)),
+        "usdRate":           usd_rate,
+        "currency":          currency,
+        "discount":          discount,
+        "skipLaunch":        True,
+        "runMode":           "attach",
+        "autoOpenIBiznes":   False,
+        "autoNavigateZakup": False,
+        "stepDelay":         int(cfg.get("stepDelay", 500)),
+        "maxRetries":        int(cfg.get("maxRetries", 3)),
+        "delayAfterLaunch":  int(cfg.get("delayAfterLaunch",  5000)),
+        "delayAfterClick":   int(cfg.get("delayAfterClick",    300)),
+        "delayAfterType":    int(cfg.get("delayAfterType",     200)),
+        "delayAfterEnter":   int(cfg.get("delayAfterEnter",   1000)),
+        "delayAfterSupplier":int(cfg.get("delayAfterSupplier",2500)),
+        "delayAfterF3":      int(cfg.get("delayAfterF3",      1000)),
+        "delayAfterF7":      int(cfg.get("delayAfterF7",      1000)),
+        "delayAfterF12":     int(cfg.get("delayAfterF12",      500)),
+        "delayAfterSave":    int(cfg.get("delayAfterSave",    1500)),
+        "delaySearchWait":   int(cfg.get("delaySearchWait",    800)),
+        "items": [
+            {
+                "kod":      row.get("kod_produktu", ""),
+                "nazwa":    row.get("nazwa", ""),
+                "ilosc":    float(row.get("ilosc", 0)),
+                "priceUSD": float(row.get("cena_netto_usd", 0) or row.get("cena_netto", 0)),
+                "pricePLN": round(
+                    float(row.get("cena_netto_usd", 0) or row.get("cena_netto", 0)) * usd_rate, 2
+                ) if currency != "PLN" else round(
+                    float(row.get("cena_netto_usd", 0) or row.get("cena_netto", 0)), 2
+                ),
+            }
+            for row in items
+        ],
+    }
+
+    if os.path.exists(RESULT_FILE):
+        os.remove(RESULT_FILE)
+    with open(TASK_FILE, "w", encoding="utf-8") as f:
+        json.dump(task, f, ensure_ascii=False, indent=2)
+
+    log.info(f"AHK GUI: task.json zapisany ({len(task['items'])} pozycji, faktura={invoice_nr})")
+    return jsonify({
+        "ok":        True,
+        "invoiceNr": invoice_nr,
+        "items":     len(task["items"]),
+        "usdRate":   usd_rate,
+        "discount":  discount,
+    })
 
 
 @app.route("/api/translate", methods=["POST", "GET"])

@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# iBiznesBot.spec – PyInstaller spec dla iBiznes Bot v3.2.2
+# iBiznesBot.spec – PyInstaller spec dla iBiznes Bot v3.3.0
 # Budowanie: python -m PyInstaller iBiznesBot.spec --clean --noconfirm
 #
 # Używa flaskwebgui (Edge/Chrome w trybie --app) – brak paska adresu/zakładek,
@@ -14,8 +14,9 @@ a = Analysis(
     binaries=[],
     datas=[
         # Bundlowane zasoby – kopiowane do katalogu _MEIPASS
-        ('ibiznes.ahk', '.'),     # AHK script → kopiowany do APPDATA przy starcie
-        ('ui.html',     '.'),     # Frontend → serwowany przez Flask
+        ('ibiznes.ahk',     '.'),   # AHK script (tryb normalny) → kopiowany do APPDATA przy starcie
+        ('ibiznes_gui.ahk', '.'),  # AHK script (tryb GUI)     → kopiowany do APPDATA przy starcie
+        ('ui.html',         '.'),  # Frontend → serwowany przez Flask
         ('coords.json', '.'),     # Domyślne koordynaty → kopiowane do APPDATA jeśli brak
         ('version.txt', '.'),     # Wersja
     ],
@@ -58,6 +59,8 @@ a = Analysis(
         'flaskwebgui',
         # Database
         'pyodbc',
+        # Translation
+        'deep_translator',
     ],
     hookspath=[],
     hooksconfig={},

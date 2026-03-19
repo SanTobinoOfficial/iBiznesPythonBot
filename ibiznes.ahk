@@ -84,32 +84,46 @@ LogMsg("  Exe           : " exePath)
 LogSep()
 
 ; ── GŁÓWNA PROCEDURA ─────────────────────────────────────────────────────────
+skipLaunch := Task.Has("skipLaunch") && Task["skipLaunch"]
+LogMsg("Tryb: " (skipLaunch ? "AHK GUI (skipLaunch=true)" : "normalny (auto-launch)"))
+
 try {
 
     ; =========================================================================
     ; KROK 1 – Uruchom / aktywuj FakturaF.exe
     ; =========================================================================
     LogMsg("[KROK 1] Sprawdzam FakturaF.exe...")
-    if !WinExist("ahk_exe FakturaF.exe") {
-        LogMsg("  FakturaF.exe nie działa – próbuję uruchomić")
-        if (exePath != "" && FileExist(exePath)) {
-            LogMsg("  Run: " exePath)
-            Run(exePath)
-            LogMsg("  Czekam na FakturaF.exe (max 30s)...")
-            if !WinWait("ahk_exe FakturaF.exe",, 30) {
-                LogMsg("  BŁĄD: FakturaF.exe nie pojawił się w 30s")
-                WriteResult(false, "FakturaF.exe nie uruchomiony w 30s")
-                ExitApp(1)
-            }
-            LogMsg("  Wykryto FakturaF.exe – czekam " D["afterLaunch"] "ms na inicjalizację")
-            Sleep(D["afterLaunch"])
-        } else {
-            LogMsg("  BŁĄD: exe='" exePath "' – brak pliku lub ścieżki")
-            WriteResult(false, "FakturaF.exe nie działa i brak ścieżki EXE")
+    if skipLaunch {
+        ; Tryb AHK GUI – użytkownik sam otworzył FakturaF, czekamy max 60s
+        LogMsg("  [skipLaunch] Czekam na FakturaF.exe otwartego ręcznie (max 60s)...")
+        if !WinWait("ahk_exe FakturaF.exe",, 60) {
+            LogMsg("  BŁĄD: FakturaF.exe nie pojawił się w 60s – otwórz program ręcznie!")
+            WriteResult(false, "FakturaF.exe nie uruchomiony – otwórz ręcznie i uruchom skrypt ponownie")
             ExitApp(1)
         }
+        LogMsg("  [skipLaunch] FakturaF.exe wykryty")
     } else {
-        LogMsg("  FakturaF.exe już działa")
+        if !WinExist("ahk_exe FakturaF.exe") {
+            LogMsg("  FakturaF.exe nie działa – próbuję uruchomić")
+            if (exePath != "" && FileExist(exePath)) {
+                LogMsg("  Run: " exePath)
+                Run(exePath)
+                LogMsg("  Czekam na FakturaF.exe (max 30s)...")
+                if !WinWait("ahk_exe FakturaF.exe",, 30) {
+                    LogMsg("  BŁĄD: FakturaF.exe nie pojawił się w 30s")
+                    WriteResult(false, "FakturaF.exe nie uruchomiony w 30s")
+                    ExitApp(1)
+                }
+                LogMsg("  Wykryto FakturaF.exe – czekam " D["afterLaunch"] "ms na inicjalizację")
+                Sleep(D["afterLaunch"])
+            } else {
+                LogMsg("  BŁĄD: exe='" exePath "' – brak pliku lub ścieżki")
+                WriteResult(false, "FakturaF.exe nie działa i brak ścieżki EXE")
+                ExitApp(1)
+            }
+        } else {
+            LogMsg("  FakturaF.exe już działa")
+        }
     }
     LogMsg("[KROK 1] WinActivate...")
     WinActivate("ahk_exe FakturaF.exe")
@@ -352,9 +366,7 @@ try {
     LogMsg("  Czas               : " elapsed "s")
     LogSep()
     WriteResult(true, "")
-
-}
-catch Error as e {
+} catch Error as e {
     LogMsg("BŁĄD KRYTYCZNY: " e.Message)
     LogMsg("  Stack: " e.Stack)
     g_Errors++
