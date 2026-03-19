@@ -46,7 +46,8 @@ jobs:
             openpyxl `
             xlwt `
             pywin32 `
-            pyodbc
+            pyodbc `
+            deep-translator
         shell: pwsh
 
       # ── 3b. pywin32 post-install (rejestracja DLL na Windows CI) ───────────

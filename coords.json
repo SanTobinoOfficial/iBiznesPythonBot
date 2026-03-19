@@ -1,8 +1,31 @@
 {
-  "_comment": "Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.",
-  "btnZakup":      {"x": 256, "y":  77},
-  "btnNewDoc":     {"x":  72, "y": 172},
-  "supplierField": {"x": 256, "y": 157},
-  "tabPositions":  {"x":  67, "y": 313},
-  "btnF7":         {"x": 420, "y": 117}
+  "_comment": "Absolutne koordynaty ekranu (Screen X,Y) – FakturaF.exe. Zaktualizuj jesli przesuniesz okno.",
+  "_workflow": {
+    "step2_newDoc":       "Nowy dokument (lewy panel)",
+    "step3_supplier":     "Pole dostawcy – wpisz skrot (np. levior)",
+    "step5_click1":       "Klik po wpisaniu nr faktury",
+    "step6_currency":     "Otworz okno waluty",
+    "step7a_currCode":    "Kod waluty (np. USD)",
+    "step7b_currConfirm": "Zatwierdz walute",
+    "step8_rate":         "Pole kursu wymiany",
+    "step9_posTab":       "Zakladka Pozycje",
+    "step16_qty":         "Pole ilosci przy dodawaniu nowego produktu (F6)",
+    "step17a_summary":    "Przejdz do podsumowania",
+    "step17b_discount":   "Otworz okno rabatu",
+    "step17c_discField":  "Pole procentu rabatu",
+    "step17d_discOk":     "Zatwierdz rabat"
+  },
+  "step2_newDoc":       { "x":  79, "y": 322 },
+  "step3_supplier":     { "x": 318, "y": 169 },
+  "step5_click1":       { "x": 170, "y": 450 },
+  "step6_currency":     { "x": 813, "y": 410 },
+  "step7a_currCode":    { "x": 864, "y": 441 },
+  "step7b_currConfirm": { "x": 881, "y": 445 },
+  "step8_rate":         { "x": 880, "y": 472 },
+  "step9_posTab":       { "x":  73, "y": 322 },
+  "step16_qty":         { "x": 694, "y": 543 },
+  "step17a_summary":    { "x":  83, "y": 275 },
+  "step17b_discount":   { "x": 741, "y": 380 },
+  "step17c_discField":  { "x": 892, "y": 412 },
+  "step17d_discOk":     { "x": 933, "y": 410 }
 }

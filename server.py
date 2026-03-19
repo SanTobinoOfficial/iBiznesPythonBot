@@ -86,6 +86,19 @@ DEFAULT_CONFIG = {
     "maxRetries":          3,
     "stepDelay":           500,
     "bazaMdbPath":         "",
+    # Opóźnienia AHK (ms) – konfigurowalne
+    "delayAfterLaunch":    5000,
+    "delayAfterClick":     300,
+    "delayAfterType":      200,
+    "delayAfterEnter":     1000,
+    "delayAfterSupplier":  2500,
+    "delayAfterF3":        1000,
+    "delayAfterF7":        1000,
+    "delayAfterF12":       500,
+    "delayAfterSave":      1500,
+    # Wyszukiwanie dostawcy w iBiznes
+    "supplierSearch":      "levior",
+    "discordWebhookUrl":   "",
 }
 
 # ── LOGGING ────────────────────────────────────────────────────────────────────
@@ -103,6 +116,155 @@ app = Flask(__name__)
 CORS(app)
 
 active_jobs: Dict[str, Any] = {}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DISCORD WEBHOOK
+# ─────────────────────────────────────────────────────────────────────────────
+
+class DiscordWebhook:
+    """
+    Wysyła powiadomienia do kanału Discord przez Incoming Webhook.
+    URL konfigurowany w config.json → discordWebhookUrl.
+    Wysyłanie jest asynchroniczne (osobny wątek) – nie blokuje głównej pracy.
+    """
+
+    # Kolory embedów (decimal)
+    COLOR_INFO    = 0x3498DB   # niebieski – start sesji
+    COLOR_OK      = 0x2ECC71   # zielony   – sukces
+    COLOR_ERROR   = 0xE74C3C   # czerwony  – błąd krytyczny
+    COLOR_WARN    = 0xE67E22   # pomarańcz – alert cenowy / nowy produkt
+    COLOR_GRAY    = 0x95A5A6   # szary     – info ogólne
+
+    def __init__(self, url: str) -> None:
+        self.url = url.strip() if url else ""
+
+    def _post(self, payload: dict) -> None:
+        if not self.url:
+            return
+        try:
+            r = requests.post(self.url, json=payload, timeout=8)
+            if r.status_code not in (200, 204):
+                log.warning(f"Discord HTTP {r.status_code}: {r.text[:200]}")
+        except Exception as e:
+            log.warning(f"Discord webhook error: {e}")
+
+    def send(self, embeds: List[dict] = None, content: str = None) -> None:
+        """Wysyła asynchronicznie."""
+        if not self.url:
+            return
+        payload: Dict[str, Any] = {}
+        if content:
+            payload["content"] = content
+        if embeds:
+            payload["embeds"] = embeds
+        threading.Thread(target=self._post, args=(payload,), daemon=True).start()
+
+    # ── Gotowe metody ─────────────────────────────────────────────────────────
+
+    def notify_session_start(self, invoice_nr: str, supplier: str,
+                             items: int, currency: str, rate: float,
+                             invoice_date: str) -> None:
+        embed = {
+            "title": "🚀 iBiznes Bot – Sesja rozpoczęta",
+            "color": self.COLOR_INFO,
+            "fields": [
+                {"name": "Faktura",    "value": f"`{invoice_nr}`",           "inline": True},
+                {"name": "Dostawca",   "value": supplier or "—",             "inline": True},
+                {"name": "Waluta",     "value": f"{currency} @ {rate:.4f}",  "inline": True},
+                {"name": "Data",       "value": invoice_date or "—",         "inline": True},
+                {"name": "Pozycji",    "value": str(items),                  "inline": True},
+            ],
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "footer": {"text": f"iBiznes Bot v{VERSION}"},
+        }
+        self.send(embeds=[embed])
+        log.info(f"[Discord] Wysłano: start sesji – faktura={invoice_nr}")
+
+    def notify_session_end(self, invoice_nr: str, success: bool,
+                           added: int, new_products: int,
+                           skipped: int, errors: int,
+                           duration_s: float) -> None:
+        status   = "✅ Sukces" if success else "❌ Błąd"
+        color    = self.COLOR_OK if success else self.COLOR_ERROR
+        mins, s  = divmod(int(duration_s), 60)
+        dur_str  = f"{mins}m {s}s" if mins else f"{s}s"
+        embed = {
+            "title": f"{status} – Sesja zakończona",
+            "color": color,
+            "fields": [
+                {"name": "Faktura",       "value": f"`{invoice_nr}`",  "inline": True},
+                {"name": "Dodano",        "value": str(added),         "inline": True},
+                {"name": "Nowe (F6)",     "value": str(new_products),  "inline": True},
+                {"name": "Pominięto",     "value": str(skipped),       "inline": True},
+                {"name": "Błędy",         "value": str(errors),        "inline": True},
+                {"name": "Czas",          "value": dur_str,            "inline": True},
+            ],
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "footer": {"text": f"iBiznes Bot v{VERSION}"},
+        }
+        self.send(embeds=[embed])
+        log.info(f"[Discord] Wysłano: koniec sesji – success={success}")
+
+    def notify_price_alert(self, invoice_nr: str, kod: str, nazwa: str,
+                           inv_pln: float, sys_pln: float, rate: float) -> None:
+        diff = abs(inv_pln - sys_pln)
+        embed = {
+            "title": "⚠️ Alert cenowy",
+            "color": self.COLOR_WARN,
+            "fields": [
+                {"name": "Faktura",     "value": f"`{invoice_nr}`",       "inline": True},
+                {"name": "Kod",         "value": f"`{kod}`",              "inline": True},
+                {"name": "Nazwa",       "value": nazwa[:50] or "—",       "inline": False},
+                {"name": "Cena faktury","value": f"{inv_pln:.4f} PLN",    "inline": True},
+                {"name": "Cena system", "value": f"{sys_pln:.4f} PLN",    "inline": True},
+                {"name": "Różnica",     "value": f"{diff:.4f} PLN",       "inline": True},
+                {"name": "Kurs USD",    "value": f"{rate:.4f}",           "inline": True},
+            ],
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "footer": {"text": f"iBiznes Bot v{VERSION}"},
+        }
+        self.send(embeds=[embed])
+
+    def notify_new_product(self, invoice_nr: str, kod: str,
+                           nazwa: str, nazwa_pl: str) -> None:
+        embed = {
+            "title": "🆕 Nowy produkt (F6)",
+            "color": self.COLOR_WARN,
+            "fields": [
+                {"name": "Faktura",    "value": f"`{invoice_nr}`", "inline": True},
+                {"name": "Kod",        "value": f"`{kod}`",        "inline": True},
+                {"name": "Nazwa oryg.","value": nazwa[:80] or "—", "inline": False},
+                {"name": "Nazwa PL",   "value": nazwa_pl[:80] or "—", "inline": False},
+            ],
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "footer": {"text": f"iBiznes Bot v{VERSION}"},
+        }
+        self.send(embeds=[embed])
+
+    def notify_error(self, invoice_nr: str, message: str) -> None:
+        embed = {
+            "title": "🔴 Błąd krytyczny",
+            "color": self.COLOR_ERROR,
+            "description": f"```{message[:1000]}```",
+            "fields": [
+                {"name": "Faktura", "value": f"`{invoice_nr}`", "inline": True},
+            ],
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "footer": {"text": f"iBiznes Bot v{VERSION}"},
+        }
+        self.send(embeds=[embed])
+        log.info(f"[Discord] Wysłano: błąd – {message[:80]}")
+
+    def notify_log(self, message: str, level: str = "info") -> None:
+        """Wysyła pojedynczą wiadomość tekstową (np. logi AHK)."""
+        icon = {"ok": "✅", "error": "❌", "warn": "⚠️"}.get(level, "ℹ️")
+        self.send(content=f"{icon} `{message}`")
+
+
+def _get_discord() -> DiscordWebhook:
+    """Zwraca instancję DiscordWebhook na podstawie aktualnej konfiguracji."""
+    return DiscordWebhook(load_config().get("discordWebhookUrl", ""))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -207,16 +369,19 @@ def autodetect_ahk() -> Optional[str]:
 
 class JobRunner:
     def __init__(self, job_id: str, payload: dict) -> None:
-        self.job_id   = job_id
-        self.payload  = payload
-        self.config   = load_config()
-        self.queue:   queue.Queue = queue.Queue()
-        self.running  = True
-        self.added    = 0
-        self.skipped  = 0
-        self.errors   = 0
+        self.job_id    = job_id
+        self.payload   = payload
+        self.config    = load_config()
+        self.queue:    queue.Queue = queue.Queue()
+        self.running   = True
+        self.added     = 0
+        self.skipped   = 0
+        self.errors    = 0
+        self.new_prods = 0
         self.usd_rate: float = 0.0
-        self.thread   = threading.Thread(target=self._run, daemon=True)
+        self.start_time = time.time()
+        self.discord   = _get_discord()
+        self.thread    = threading.Thread(target=self._run, daemon=True)
         self.thread.start()
 
     def _emit(self, type_: str, **kwargs) -> None:
@@ -241,6 +406,13 @@ class JobRunner:
                 f"ROZNICA: {diff:.4f} | KURS: {self.usd_rate:.4f}\n")
         with open(PRICE_ALERTS_FILE, "a", encoding="utf-8") as f:
             f.write(line)
+        # Discord – alert cenowy
+        self.discord.notify_price_alert(
+            invoice_nr=self.payload.get("invoiceNr", "?"),
+            kod=kod, nazwa=nazwa,
+            inv_pln=inv_pln, sys_pln=sys_pln,
+            rate=self.usd_rate,
+        )
 
     def _run(self) -> None:
         try:
@@ -260,6 +432,16 @@ class JobRunner:
 
             self._log(f"Pozycji: {len(data)} | Tolerancja: {tol:.2f} PLN | Tryb: {run_mode}")
 
+            # Discord – powiadomienie o starcie sesji
+            self.discord.notify_session_start(
+                invoice_nr=self.payload.get("invoiceNr", "?"),
+                supplier=self.payload.get("supplier", ""),
+                items=len(data),
+                currency=currency,
+                rate=rate,
+                invoice_date=self.payload.get("invoiceDate", ""),
+            )
+
             if not data:
                 self._log("Brak pozycji w CSV.", "error")
                 self._finish(False)
@@ -275,10 +457,12 @@ class JobRunner:
                 "invoiceNr":         self.payload.get("invoiceNr", ""),
                 "invoiceDate":       self.payload.get("invoiceDate", ""),
                 "supplier":          self.payload.get("supplier", "") or self.payload.get("nip", ""),
+                "supplierSearch":    self.config.get("supplierSearch", "levior"),
                 "exePath":           exe_path,
                 "tolerance":         tol,
                 "usdRate":           rate,
                 "currency":          currency,
+                "discount":          int(self.payload.get("discount", 0) or 0),
                 "runMode":           run_mode,
                 "diagMode":          diag,
                 "autoOpenIBiznes":   self.config.get("autoOpenIBiznes", True),
@@ -287,6 +471,16 @@ class JobRunner:
                 "customMenuPath":    self.config.get("customMenuPath", ""),
                 "stepDelay":         int(self.config.get("stepDelay", 500)),
                 "maxRetries":        int(self.config.get("maxRetries", 3)),
+                # Opóźnienia AHK (ms)
+                "delayAfterLaunch":   int(self.config.get("delayAfterLaunch",  5000)),
+                "delayAfterClick":    int(self.config.get("delayAfterClick",    300)),
+                "delayAfterType":     int(self.config.get("delayAfterType",     200)),
+                "delayAfterEnter":    int(self.config.get("delayAfterEnter",   1000)),
+                "delayAfterSupplier": int(self.config.get("delayAfterSupplier",2500)),
+                "delayAfterF3":       int(self.config.get("delayAfterF3",      1000)),
+                "delayAfterF7":       int(self.config.get("delayAfterF7",      1000)),
+                "delayAfterF12":      int(self.config.get("delayAfterF12",      500)),
+                "delayAfterSave":     int(self.config.get("delayAfterSave",    1500)),
                 "items": [
                     {
                         "kod":      row.get("kod_produktu", ""),
@@ -296,10 +490,10 @@ class JobRunner:
                                          or row.get("cena_netto", 0)),
                         "pricePLN": round(
                             float(row.get("cena_netto_usd", 0)
-                                  or row.get("cena_netto", 0)) * rate, 4
-                        ) if currency != "PLN" else float(
+                                  or row.get("cena_netto", 0)) * rate, 2
+                        ) if currency != "PLN" else round(float(
                             row.get("cena_netto_usd", 0) or row.get("cena_netto", 0)
-                        ),
+                        ), 2),
                     }
                     for row in data
                 ],
@@ -339,6 +533,10 @@ class JobRunner:
         except Exception as e:
             self._log(f"Blad krytyczny: {e}", "error")
             log.exception("Blad w JobRunner")
+            self.discord.notify_error(
+                invoice_nr=self.payload.get("invoiceNr", "?"),
+                message=str(e),
+            )
             self._finish(False)
 
     def _fetch_rate(self, currency: str) -> float:
@@ -461,6 +659,17 @@ class JobRunner:
         self._emit("done", success=success,
                    added=self.added, skipped=self.skipped, errors=self.errors)
         self._emit("status", status="done" if success else "error")
+        # Discord – powiadomienie o końcu sesji
+        duration = time.time() - self.start_time
+        self.discord.notify_session_end(
+            invoice_nr=self.payload.get("invoiceNr", "?"),
+            success=success,
+            added=self.added,
+            new_products=self.new_prods,
+            skipped=self.skipped,
+            errors=self.errors,
+            duration_s=duration,
+        )
 
     def stop(self) -> None:
         self.running = False
@@ -631,6 +840,55 @@ def api_alerts_clear():
     if os.path.exists(PRICE_ALERTS_FILE):
         os.remove(PRICE_ALERTS_FILE)
     return jsonify({"ok": True})
+
+
+@app.route("/api/discord/test", methods=["POST"])
+def api_discord_test():
+    """Wysyła testowe powiadomienie na Discord aby zweryfikować webhook URL."""
+    discord = _get_discord()
+    if not discord.url:
+        return jsonify({"ok": False, "error": "discordWebhookUrl nie ustawiony w konfiguracji."})
+    discord.send(embeds=[{
+        "title": "✅ iBiznes Bot – Test Webhook",
+        "color": 0x2ECC71,
+        "description": "Połączenie z Discord działa poprawnie!",
+        "fields": [{"name": "Wersja", "value": VERSION, "inline": True}],
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "footer": {"text": f"iBiznes Bot v{VERSION}"},
+    }])
+    return jsonify({"ok": True, "message": "Testowe powiadomienie wysłane."})
+
+
+@app.route("/api/translate", methods=["POST", "GET"])
+def api_translate():
+    """
+    Tłumaczy tekst na podany język (domyślnie: pl).
+    POST JSON: {"text": "...", "to": "pl"}
+    GET: ?text=...&to=pl
+    Używa deep_translator (Google Translate bez klucza API).
+    """
+    if request.method == "POST":
+        data = request.get_json(force=True) or {}
+        text    = data.get("text", "")
+        to_lang = data.get("to", "pl")
+    else:
+        text    = request.args.get("text", "")
+        to_lang = request.args.get("to", "pl")
+
+    if not text:
+        return jsonify({"translated": "", "original": ""})
+
+    try:
+        from deep_translator import GoogleTranslator
+        translated = GoogleTranslator(source="auto", target=to_lang).translate(text)
+        return jsonify({"translated": translated, "original": text})
+    except ImportError:
+        log.warning("deep_translator nie zainstalowany – sprobuj: pip install deep-translator")
+    except Exception as e:
+        log.warning(f"Blad tlumaczenia: {e}")
+
+    # Fallback – zwroc oryginalny tekst
+    return jsonify({"translated": text, "original": text, "error": "translator unavailable"})
 
 
 @app.route("/api/logs")

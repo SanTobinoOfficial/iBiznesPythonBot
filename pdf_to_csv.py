@@ -201,10 +201,26 @@ class InvoicePDFParser:
             else:
                 header['currency'] = 'PLN'
 
+            # Rabat – "Final discount 8%" lub "Discount 8%"
+            discount = self._parse_discount(text)
+            if discount is not None:
+                header['discount'] = discount
+
         except Exception as e:
             log.debug(f"Blad parsowania naglowka: {e}")
 
         return header
+
+    @staticmethod
+    def _parse_discount(text: str) -> Optional[int]:
+        """Wyciaga procent rabatu z tekstu faktury. Np. 'Final discount 8%' -> 8"""
+        m = re.search(r'(?:final\s+)?discount\s+(\d+)\s*%', text, re.I)
+        if m:
+            return int(m.group(1))
+        m = re.search(r'rabat\s+(\d+)\s*%', text, re.I)
+        if m:
+            return int(m.group(1))
+        return None
 
     # ─────────────────────────────────────────────────────────────────────────
     # PARSOWANIE JEDNEJ STRONY

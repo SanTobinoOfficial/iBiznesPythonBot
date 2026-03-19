@@ -522,7 +522,131 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
           <label>Domyślna tolerancja ceny (PLN)</label>
           <input type="number" id="cfg_tolerance" min="0.01" max="10" step="0.01" value="0.05">
         </div>
+        <div class="field">
+          <label>Fraza wyszukiwania dostawcy</label>
+          <input type="text" id="cfg_supplierSearch" placeholder="np. levior">
+          <div class="hint">Wpisywana przez bota w pole wyszukiwania dostawcy (krok 3)</div>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <!-- OPÓŹNIENIA AHK -->
+  <div class="card">
+    <div class="card-title">Opóźnienia AHK (ms)</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px">
+      Każde opóźnienie można dostosować do szybkości Twojego systemu.
+      Zwiększ wartości jeśli iBiznes reaguje wolno. Minimalne zalecane: 200 ms.
+    </p>
+    <div class="grid-2">
+      <div>
+        <div class="field">
+          <label>Po uruchomieniu programu</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterLaunch" min="1000" max="15000" step="500" value="5000" oninput="$('v_delayAfterLaunch').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterLaunch">5000ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Po każdym kliknięciu</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterClick" min="100" max="2000" step="50" value="300" oninput="$('v_delayAfterClick').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterClick">300ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Po wpisaniu tekstu</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterType" min="50" max="1000" step="50" value="200" oninput="$('v_delayAfterType').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterType">200ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Po naciśnięciu Enter</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterEnter" min="200" max="3000" step="100" value="1000" oninput="$('v_delayAfterEnter').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterEnter">1000ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Po wyborze dostawcy</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterSupplier" min="500" max="8000" step="250" value="2500" oninput="$('v_delayAfterSupplier').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterSupplier">2500ms</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>Po wyszukaniu produktu (F3)</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterF3" min="200" max="3000" step="100" value="1000" oninput="$('v_delayAfterF3').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterF3">1000ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Po naciśnięciu F7</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterF7" min="200" max="3000" step="100" value="1000" oninput="$('v_delayAfterF7').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterF7">1000ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Po naciśnięciu F12</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterF12" min="100" max="2000" step="100" value="500" oninput="$('v_delayAfterF12').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterF12">500ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Po zapisaniu faktury</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delayAfterSave" min="500" max="5000" step="250" value="1500" oninput="$('v_delayAfterSave').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delayAfterSave">1500ms</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Oczekiwanie na wyniki wyszukiwania</label>
+          <div class="slider-row">
+            <input type="range" id="cfg_delaySearchWait" min="300" max="3000" step="100" value="800" oninput="$('v_delaySearchWait').textContent=this.value+'ms'">
+            <span class="slider-val" id="v_delaySearchWait">800ms</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCORD WEBHOOK -->
+  <div class="card" style="border-color:rgba(88,101,242,.35)">
+    <div class="card-title" style="color:#5865f2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865f2" style="flex-shrink:0"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.08.112 18.1.133 18.115a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+      Discord Webhook
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px">
+      Bot wysyła powiadomienia na Discord: <strong style="color:#5865f2">start sesji</strong>,
+      <strong style="color:#5865f2">koniec sesji</strong>, <strong style="color:#5865f2">alerty cenowe</strong>,
+      <strong style="color:#5865f2">nowe produkty (F6)</strong> i <strong style="color:#5865f2">błędy krytyczne</strong>.
+    </p>
+    <div class="field">
+      <label>Webhook URL</label>
+      <div class="field-row">
+        <input type="text" id="cfg_discordWebhookUrl"
+               placeholder="https://discord.com/api/webhooks/…"
+               style="font-size:11px">
+        <button class="detect-btn" onclick="testDiscord()" style="border-color:rgba(88,101,242,.5);color:#5865f2;background:rgba(88,101,242,.1)">▶ Test</button>
+      </div>
+      <div class="hint">
+        Discord → Ustawienia kanału → Integracje → Webhooki → Nowy webhook → Skopiuj URL
+      </div>
+    </div>
+    <div id="discordTestResult" style="display:none;font-size:11px;margin-top:6px;padding:6px 10px;border-radius:var(--r)"></div>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted2)">
+      Wysyłane zdarzenia:
+      <span style="color:#5865f2">🚀 Start</span> ·
+      <span style="color:#2ecc71">✅ Koniec</span> ·
+      <span style="color:#e74c3c">🔴 Błąd</span> ·
+      <span style="color:#e67e22">⚠️ Alert cenowy</span> ·
+      <span style="color:#e67e22">🆕 Nowy produkt</span>
     </div>
   </div>
 
@@ -551,34 +675,82 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
       </thead>
       <tbody>
         <tr>
-          <td><span class="coord-step">1</span></td>
-          <td style="color:var(--muted2)">Przycisk <strong style="color:var(--text)">"Zakup (...)"</strong></td>
-          <td><input class="coord-input" type="number" id="cx_btnZakup_x" value="256"></td>
-          <td><input class="coord-input" type="number" id="cx_btnZakup_y" value="77"></td>
-        </tr>
-        <tr>
           <td><span class="coord-step">2</span></td>
           <td style="color:var(--muted2)">Nowy dokument <strong style="color:var(--text)">(lewy panel)</strong></td>
-          <td><input class="coord-input" type="number" id="cx_btnNewDoc_x" value="72"></td>
-          <td><input class="coord-input" type="number" id="cx_btnNewDoc_y" value="172"></td>
+          <td><input class="coord-input" type="number" id="cx_step2_newDoc_x" value="79"></td>
+          <td><input class="coord-input" type="number" id="cx_step2_newDoc_y" value="322"></td>
         </tr>
         <tr>
           <td><span class="coord-step">3</span></td>
           <td style="color:var(--muted2)">Pole <strong style="color:var(--text)">dostawcy</strong></td>
-          <td><input class="coord-input" type="number" id="cx_supplierField_x" value="256"></td>
-          <td><input class="coord-input" type="number" id="cx_supplierField_y" value="157"></td>
-        </tr>
-        <tr>
-          <td><span class="coord-step">4</span></td>
-          <td style="color:var(--muted2)">Zakładka <strong style="color:var(--text)">Pozycje</strong></td>
-          <td><input class="coord-input" type="number" id="cx_tabPositions_x" value="67"></td>
-          <td><input class="coord-input" type="number" id="cx_tabPositions_y" value="313"></td>
+          <td><input class="coord-input" type="number" id="cx_step3_supplier_x" value="318"></td>
+          <td><input class="coord-input" type="number" id="cx_step3_supplier_y" value="169"></td>
         </tr>
         <tr>
           <td><span class="coord-step">5</span></td>
-          <td style="color:var(--muted2)">Przycisk <strong style="color:var(--text)">F7 – Dodaj z Kartoteki</strong></td>
-          <td><input class="coord-input" type="number" id="cx_btnF7_x" value="420"></td>
-          <td><input class="coord-input" type="number" id="cx_btnF7_y" value="117"></td>
+          <td style="color:var(--muted2)">Klik po wpisaniu nr faktury</td>
+          <td><input class="coord-input" type="number" id="cx_step5_click1_x" value="170"></td>
+          <td><input class="coord-input" type="number" id="cx_step5_click1_y" value="450"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">6</span></td>
+          <td style="color:var(--muted2)">Otworz okno <strong style="color:var(--text)">waluty</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step6_currency_x" value="813"></td>
+          <td><input class="coord-input" type="number" id="cx_step6_currency_y" value="410"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">7a</span></td>
+          <td style="color:var(--muted2)">Kod waluty (np. <strong style="color:var(--text)">USD</strong>)</td>
+          <td><input class="coord-input" type="number" id="cx_step7a_currCode_x" value="864"></td>
+          <td><input class="coord-input" type="number" id="cx_step7a_currCode_y" value="441"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">7b</span></td>
+          <td style="color:var(--muted2)">Zatwierdz <strong style="color:var(--text)">walute</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step7b_currConfirm_x" value="881"></td>
+          <td><input class="coord-input" type="number" id="cx_step7b_currConfirm_y" value="445"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">8</span></td>
+          <td style="color:var(--muted2)">Pole <strong style="color:var(--text)">kursu wymiany</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step8_rate_x" value="880"></td>
+          <td><input class="coord-input" type="number" id="cx_step8_rate_y" value="472"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">9</span></td>
+          <td style="color:var(--muted2)">Zakladka <strong style="color:var(--text)">Pozycje</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step9_posTab_x" value="73"></td>
+          <td><input class="coord-input" type="number" id="cx_step9_posTab_y" value="322"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">16</span></td>
+          <td style="color:var(--muted2)">Pole ilosci <strong style="color:var(--text)">(nowy produkt F6)</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step16_qty_x" value="694"></td>
+          <td><input class="coord-input" type="number" id="cx_step16_qty_y" value="543"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">17a</span></td>
+          <td style="color:var(--muted2)">Przejdz do <strong style="color:var(--text)">podsumowania</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step17a_summary_x" value="83"></td>
+          <td><input class="coord-input" type="number" id="cx_step17a_summary_y" value="275"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">17b</span></td>
+          <td style="color:var(--muted2)">Otworz okno <strong style="color:var(--text)">rabatu</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step17b_discount_x" value="741"></td>
+          <td><input class="coord-input" type="number" id="cx_step17b_discount_y" value="380"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">17c</span></td>
+          <td style="color:var(--muted2)">Pole <strong style="color:var(--text)">procentu rabatu</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step17c_discField_x" value="892"></td>
+          <td><input class="coord-input" type="number" id="cx_step17c_discField_y" value="412"></td>
+        </tr>
+        <tr>
+          <td><span class="coord-step">17d</span></td>
+          <td style="color:var(--muted2)">Zatwierdz <strong style="color:var(--text)">rabat</strong></td>
+          <td><input class="coord-input" type="number" id="cx_step17d_discOk_x" value="933"></td>
+          <td><input class="coord-input" type="number" id="cx_step17d_discOk_y" value="410"></td>
         </tr>
       </tbody>
     </table>
@@ -746,6 +918,19 @@ async function loadSettings() {
     if (cfg.exePath) $('exePathHint').textContent = '✓ Znaleziono: ' + cfg.exePath;
     if (cfg.ahkExePath) $('ahkPathHint').textContent = '✓ Znaleziono: ' + cfg.ahkExePath;
 
+    // New fields
+    if ($('cfg_supplierSearch')) $('cfg_supplierSearch').value = cfg.supplierSearch || 'levior';
+    if ($('cfg_discordWebhookUrl')) $('cfg_discordWebhookUrl').value = cfg.discordWebhookUrl || '';
+    ['delayAfterLaunch','delayAfterClick','delayAfterType','delayAfterEnter',
+     'delayAfterSupplier','delayAfterF3','delayAfterF7','delayAfterF12',
+     'delayAfterSave','delaySearchWait'].forEach(k => {
+      const el = $('cfg_'+k), vEl = $('v_'+k);
+      if (el && cfg[k] !== undefined) {
+        el.value = cfg[k];
+        if (vEl) vEl.textContent = cfg[k]+'ms';
+      }
+    });
+
   } catch(_) {}
 }
 
@@ -763,6 +948,18 @@ async function saveSettings() {
     defaultCurrency:   $('cfg_defaultCurrency').value,
     tolerance:         parseFloat($('cfg_tolerance').value) || 0.05,
     runMode:           $('runMode').value,
+    supplierSearch:    $('cfg_supplierSearch') ? $('cfg_supplierSearch').value.trim() : 'levior',
+    discordWebhookUrl: $('cfg_discordWebhookUrl') ? $('cfg_discordWebhookUrl').value.trim() : '',
+    delayAfterLaunch:   parseInt($('cfg_delayAfterLaunch')  ? $('cfg_delayAfterLaunch').value  : 5000) || 5000,
+    delayAfterClick:    parseInt($('cfg_delayAfterClick')   ? $('cfg_delayAfterClick').value   : 300)  || 300,
+    delayAfterType:     parseInt($('cfg_delayAfterType')    ? $('cfg_delayAfterType').value    : 200)  || 200,
+    delayAfterEnter:    parseInt($('cfg_delayAfterEnter')   ? $('cfg_delayAfterEnter').value   : 1000) || 1000,
+    delayAfterSupplier: parseInt($('cfg_delayAfterSupplier')? $('cfg_delayAfterSupplier').value: 2500) || 2500,
+    delayAfterF3:       parseInt($('cfg_delayAfterF3')      ? $('cfg_delayAfterF3').value      : 1000) || 1000,
+    delayAfterF7:       parseInt($('cfg_delayAfterF7')      ? $('cfg_delayAfterF7').value      : 1000) || 1000,
+    delayAfterF12:      parseInt($('cfg_delayAfterF12')     ? $('cfg_delayAfterF12').value     : 500)  || 500,
+    delayAfterSave:     parseInt($('cfg_delayAfterSave')    ? $('cfg_delayAfterSave').value    : 1500) || 1500,
+    delaySearchWait:    parseInt($('cfg_delaySearchWait')   ? $('cfg_delaySearchWait').value   : 800)  || 800,
   };
   try {
     const r = await fetch(`${API}/api/config`, {method:'POST',
@@ -803,6 +1000,34 @@ async function detectPaths() {
 
 function toggleCustomMenu() {
   $('customMenuField').style.display = $('cfg_menuPath').value === 'custom' ? 'block' : 'none';
+}
+
+async function testDiscord() {
+  const res = $('discordTestResult');
+  if (!res) return;
+  res.style.display = 'block';
+  res.textContent = 'Wysyłam...';
+  res.style.background = 'rgba(100,116,139,.1)';
+  res.style.color = 'var(--muted2)';
+  try {
+    const r = await fetch(`${API}/api/discord/test`, {
+      method: 'POST', signal: AbortSignal.timeout(8000)
+    });
+    const d = await r.json();
+    if (d.ok) {
+      res.style.background = 'rgba(34,197,94,.1)';
+      res.style.color = 'var(--ok)';
+      res.textContent = 'OK – ' + (d.message || 'Wiadomość testowa wysłana na kanał Discord.');
+    } else {
+      res.style.background = 'rgba(239,68,68,.1)';
+      res.style.color = 'var(--err)';
+      res.textContent = 'BLAD – ' + (d.error || 'Nieznany błąd.');
+    }
+  } catch(e) {
+    res.style.background = 'rgba(239,68,68,.1)';
+    res.style.color = 'var(--err)';
+    res.textContent = 'BLAD – Serwer niedostępny lub timeout.';
+  }
 }
 
 /* ── HISTORY ────────────────────────────────────────────────── */
@@ -997,7 +1222,11 @@ async function uploadPDF(file) {
 }
 
 /* ── COORDS ─────────────────────────────────────────────────── */
-const COORD_KEYS = ['btnZakup','btnNewDoc','supplierField','tabPositions','btnF7'];
+const COORD_KEYS = [
+  'step2_newDoc','step3_supplier','step5_click1','step6_currency',
+  'step7a_currCode','step7b_currConfirm','step8_rate','step9_posTab',
+  'step16_qty','step17a_summary','step17b_discount','step17c_discField','step17d_discOk'
+];
 
 async function loadCoords() {
   try {
@@ -1016,7 +1245,7 @@ async function loadCoords() {
 
 async function saveCoords() {
   const coords = {
-    '_comment': 'Absolutne koordynaty ekranu (Screen X,Y). Zaktualizuj jesli przesuniesz okno iBiznes.'
+    '_comment': 'Absolutne koordynaty ekranu (Screen X,Y) – FakturaF.exe. Zaktualizuj jesli przesuniesz okno.'
   };
   COORD_KEYS.forEach(key => {
     coords[key] = {
