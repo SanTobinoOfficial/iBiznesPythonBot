@@ -232,10 +232,13 @@ try {
     LogMsg("[KROK 8] OK")
 
     ; =========================================================================
-    ; KROK 9 – Zakładka pozycji (73, 322)
+    ; KROK 9 – Zakładka pozycji: Send {F2}
     ; =========================================================================
-    LogMsg("[KROK 9] Kliknij zakładkę Pozycje (73, 322)")
-    ClickAt(73, 322)
+    LogMsg("[KROK 9] Send: {F2} (zakładka pozycji)")
+    Hotkey("F2", "Off")
+    Send("{F2}")
+    Hotkey("F2", "On")
+    SafeSleep(D["afterClick"])
     LogMsg("[KROK 9] OK")
 
     ; =========================================================================
