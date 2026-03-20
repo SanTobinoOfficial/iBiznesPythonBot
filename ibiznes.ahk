@@ -645,9 +645,12 @@ class JSON {
         if p > StrLen(s)
             return ""
         c := SubStr(s, p, 1)
-        if (c = '"') return JSON._parseString(s, &p)
-        if (c = '{') return JSON._parseObject(s, &p)
-        if (c = '[') return JSON._parseArray(s, &p)
+        if (c = '"')
+            return JSON._parseString(s, &p)
+        if (c = '{')
+            return JSON._parseObject(s, &p)
+        if (c = '[')
+            return JSON._parseArray(s, &p)
         if (c = 't') {
             p += 4
             return true
@@ -747,7 +750,8 @@ class JSON {
                 break
             c := SubStr(s, p, 1)
             p++
-            if (c = '}') return obj
+            if (c = '}')
+                return obj
             ; c = ',' → kontynuuj, inne znaki → przerywamy (błędny JSON)
             if (c != ',')
                 break
@@ -773,7 +777,8 @@ class JSON {
                 break
             c := SubStr(s, p, 1)
             p++
-            if (c = ']') return arr
+            if (c = ']')
+                return arr
             ; c = ',' → kontynuuj, inne znaki → przerywamy (błędny JSON)
             if (c != ',')
                 break
@@ -789,13 +794,16 @@ class JSON {
             return '"' StrReplace(StrReplace(StrReplace(val, '\', '\\'), '"', '\"'), '`n', '\n') '"'
         if (t = "Integer" || t = "Float")
             return val
-        if (t = "Map")   return JSON._serializeObject(val)
-        if (t = "Array") return JSON._serializeArray(val)
+        if (t = "Map")
+            return JSON._serializeObject(val)
+        if (t = "Array")
+            return JSON._serializeArray(val)
         return "null"
     }
 
     static _serializeObject(obj) {
-        if (obj.Count = 0) return "{}"
+        if (obj.Count = 0)
+            return "{}"
         parts := ""
         for k, v in obj {
             if (parts != "") parts .= ","
@@ -805,7 +813,8 @@ class JSON {
     }
 
     static _serializeArray(arr) {
-        if (arr.Length = 0) return "[]"
+        if (arr.Length = 0)
+            return "[]"
         parts := ""
         for v in arr {
             if (parts != "") parts .= ","
