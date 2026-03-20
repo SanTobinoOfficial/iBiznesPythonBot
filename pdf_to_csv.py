@@ -593,23 +593,21 @@ class CSVExporter:
             ilosc_val = int(ilosc) if ilosc == int(ilosc) else ilosc
             supplier  = self.header.get("supplier", "") or ""
 
-            db = self._mdb_data.get(kod5, {})
+            db            = self._mdb_data.get(kod5, {})
+            cena_dewizowa = round(item["cena_netto_usd"], 4)   # zawsze USD z faktury
             if db:
-                # Tryb bezpieczny: kod + ilosc z faktury, reszta z bazy
+                # Tryb bezpieczny: kod + ilosc + cena USD z faktury, reszta z bazy
                 nazwa           = db["nazwa"]
                 vat             = db["vat"]
                 jm              = db["jm"]
-                cena_netto_pln  = round(db["cd"], 4)
-                cena_brutto_pln = round(db["cd"] * (1 + vat / 100), 4)
-                cena_dewizowa   = round(db["cd"] / rate, 4) if rate and currency.upper() != "PLN" else cena_netto_pln
             else:
-                # Fallback: wszystko z faktury (produkt nie istnieje w bazie)
+                # Fallback: produkt nie istnieje w bazie
                 nazwa           = self._get_nazwa(item)
                 vat             = 23.0
                 jm              = item.get("jednostka", "szt") or "szt"
-                cena_dewizowa   = round(item["cena_netto_usd"], 4)
-                cena_netto_pln  = round(cena_dewizowa * rate, 4) if currency.upper() != "PLN" else cena_dewizowa
-                cena_brutto_pln = round(cena_netto_pln * 1.23, 4)
+
+            cena_netto_pln  = round(cena_dewizowa * rate, 4) if currency.upper() != "PLN" else cena_dewizowa
+            cena_brutto_pln = round(cena_netto_pln * (1 + vat / 100), 4)
 
             vat_int = int(round(vat))
 
