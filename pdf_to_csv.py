@@ -588,39 +588,56 @@ class CSVExporter:
         ws = wb.add_sheet("Import")
 
         for row_idx, item in enumerate(self.items):
-            ilosc = item["ilosc"]
+            kod5      = str(item.get("kod_produktu", ""))[:5]
+            ilosc     = item["ilosc"]
             ilosc_val = int(ilosc) if ilosc == int(ilosc) else ilosc
-            cena_dewizowa = round(item["cena_netto_usd"], 4)
-            cena_netto_pln = round(cena_dewizowa * rate, 4) if currency.upper() != "PLN" else cena_dewizowa
-            cena_brutto_pln = round(cena_netto_pln * 1.23, 4)
-            jm = item.get("jednostka", "szt") or "szt"
-            supplier = self.header.get("supplier", "") or ""
+            supplier  = self.header.get("supplier", "") or ""
+
+            db = self._mdb_data.get(kod5, {})
+            if db:
+                # Tryb bezpieczny: kod + ilosc z faktury, reszta z bazy
+                nazwa           = db["nazwa"]
+                vat             = db["vat"]
+                jm              = db["jm"]
+                cena_netto_pln  = round(db["cd"], 4)
+                cena_brutto_pln = round(db["cd"] * (1 + vat / 100), 4)
+                cena_dewizowa   = round(db["cd"] / rate, 4) if rate and currency.upper() != "PLN" else cena_netto_pln
+            else:
+                # Fallback: wszystko z faktury (produkt nie istnieje w bazie)
+                nazwa           = self._get_nazwa(item)
+                vat             = 23.0
+                jm              = item.get("jednostka", "szt") or "szt"
+                cena_dewizowa   = round(item["cena_netto_usd"], 4)
+                cena_netto_pln  = round(cena_dewizowa * rate, 4) if currency.upper() != "PLN" else cena_dewizowa
+                cena_brutto_pln = round(cena_netto_pln * 1.23, 4)
+
+            vat_int = int(round(vat))
 
             # 24 kolumny (A–X) – bez nagłówka
-            ws.write(row_idx, 0,  item["kod_produktu"])       # A: Kod towaru
-            ws.write(row_idx, 1,  item["kod_produktu"])       # B: Nr katalogowy
-            ws.write(row_idx, 2,  self._get_nazwa(item))      # C: Nazwa towaru
-            ws.write(row_idx, 3,  "")                      # D: Magazyn
-            ws.write(row_idx, 4,  "T")                     # E: Rodzaj (T,U)
-            ws.write(row_idx, 5,  "N")                     # F: Dodać do kartoteki (T,N)
-            ws.write(row_idx, 6,  ilosc_val)               # G: Ilość
-            ws.write(row_idx, 7,  cena_netto_pln)          # H: Cena ZAKUPU NETTO
-            ws.write(row_idx, 8,  cena_brutto_pln)         # I: Cena ZAKUPU BRUTTO
-            ws.write(row_idx, 9,  item.get("ean", "") or "") # J: EAN
-            ws.write(row_idx, 10, "N")                     # K: Zmienić cenę sprz. (T,N)
-            ws.write(row_idx, 11, 23)                      # L: VAT (0, 8, 23)
-            ws.write(row_idx, 12, "23%")                   # M: Nazwa VAT
-            ws.write(row_idx, 13, jm)                      # N: JM. (szt)
-            ws.write(row_idx, 14, "")                      # O: PKWiU/ CN
-            ws.write(row_idx, 15, "")                      # P: Cena SPRZEDAZY NETTO 1
-            ws.write(row_idx, 16, "")                      # Q: Cena SPRZEDAZY BRUTTO 1
-            ws.write(row_idx, 17, cena_dewizowa)           # R: Cena ZAKUPU Dewizowa
-            ws.write(row_idx, 18, supplier)                # S: Nazwa dostawcy
-            ws.write(row_idx, 19, "")                      # T: Producent
-            ws.write(row_idx, 20, "")                      # U: Grupa
-            ws.write(row_idx, 21, "")                      # V: Waga netto
-            ws.write(row_idx, 22, "")                      # W: Waga brutto
-            ws.write(row_idx, 23, "")                      # X: Kraj pochdzenia
+            ws.write(row_idx, 0,  kod5)                        # A: Kod towaru
+            ws.write(row_idx, 1,  kod5)                        # B: Nr katalogowy
+            ws.write(row_idx, 2,  nazwa)                       # C: Nazwa towaru
+            ws.write(row_idx, 3,  "")                          # D: Magazyn
+            ws.write(row_idx, 4,  "T")                         # E: Rodzaj (T,U)
+            ws.write(row_idx, 5,  "N")                         # F: Dodać do kartoteki (T,N)
+            ws.write(row_idx, 6,  ilosc_val)                   # G: Ilość
+            ws.write(row_idx, 7,  cena_netto_pln)              # H: Cena ZAKUPU NETTO
+            ws.write(row_idx, 8,  cena_brutto_pln)             # I: Cena ZAKUPU BRUTTO
+            ws.write(row_idx, 9,  item.get("ean", "") or "")   # J: EAN
+            ws.write(row_idx, 10, "N")                         # K: Zmienić cenę sprz. (T,N)
+            ws.write(row_idx, 11, vat_int)                     # L: VAT (0, 8, 23)
+            ws.write(row_idx, 12, f"{vat_int}%")               # M: Nazwa VAT
+            ws.write(row_idx, 13, jm)                          # N: JM. (szt)
+            ws.write(row_idx, 14, "")                          # O: PKWiU/ CN
+            ws.write(row_idx, 15, "")                          # P: Cena SPRZEDAZY NETTO 1
+            ws.write(row_idx, 16, "")                          # Q: Cena SPRZEDAZY BRUTTO 1
+            ws.write(row_idx, 17, cena_dewizowa)               # R: Cena ZAKUPU Dewizowa
+            ws.write(row_idx, 18, supplier)                    # S: Nazwa dostawcy
+            ws.write(row_idx, 19, "")                          # T: Producent
+            ws.write(row_idx, 20, "")                          # U: Grupa
+            ws.write(row_idx, 21, "")                          # V: Waga netto
+            ws.write(row_idx, 22, "")                          # W: Waga brutto
+            ws.write(row_idx, 23, "")                          # X: Kraj pochdzenia
 
         wb.save(output_path)
         log.info(f"XLS iBiznes zapisany: {output_path} ({len(self.items)} pozycji)")
