@@ -30,6 +30,29 @@ global g_Added     := 0
 global g_New       := 0
 global g_Errors    := 0
 global g_StartTime := A_TickCount
+global g_Paused    := false
+global g_Stopped   := false
+
+; ── HOTKEY: F1 = pauza / wznowienie, F2 = zatrzymaj ─────────────────────────
+F1:: {
+    global g_Paused
+    g_Paused := !g_Paused
+    if g_Paused {
+        ToolTip("PAUZA  |  F1 = wznow  |  F2 = zatrzymaj")
+        LogMsg("[HOTKEY] F1 – PAUZA")
+    } else {
+        ToolTip()
+        LogMsg("[HOTKEY] F1 – WZNOWIENIE")
+    }
+}
+
+F2:: {
+    global g_Stopped, g_Paused
+    g_Stopped := true
+    g_Paused  := false
+    ToolTip("ZATRZYMYWANIE...")
+    LogMsg("[HOTKEY] F2 – STOP przez uzytkownika")
+}
 
 LogSep()
 LogMsg("=== iBiznes Bot v4.1 URUCHOMIONY ===")
@@ -115,7 +138,7 @@ try {
                     ExitApp(1)
                 }
                 LogMsg("  Wykryto FakturaF.exe – czekam " D["afterLaunch"] "ms na inicjalizację")
-                Sleep(D["afterLaunch"])
+                SafeSleep(D["afterLaunch"])
             } else {
                 LogMsg("  BŁĄD: exe='" exePath "' – brak pliku lub ścieżki")
                 WriteResult(false, "FakturaF.exe nie działa i brak ścieżki EXE")
@@ -128,7 +151,7 @@ try {
     LogMsg("[KROK 1] WinActivate...")
     WinActivate("ahk_exe FakturaF.exe")
     WinWaitActive("ahk_exe FakturaF.exe",, 15)
-    Sleep(500)
+    SafeSleep(500)
     LogMsg("[KROK 1] OK – okno FakturaF aktywne")
 
     ; =========================================================================
@@ -144,17 +167,17 @@ try {
     LogMsg("[KROK 3] Pole dostawcy (318, 169) – wpisuję: '" supplierSearch "'")
     ClickAt(318, 169)
     Send("^a")
-    Sleep(100)
+    SafeSleep(100)
     LogMsg("[KROK 3] Send: '" supplierSearch "'")
     Send(supplierSearch)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
     LogMsg("[KROK 3] Send: {Down}")
     Send("{Down}")
-    Sleep(500)
+    SafeSleep(500)
     LogMsg("[KROK 3] Send: {Enter}")
     Send("{Enter}")
     LogMsg("[KROK 3] Czekam " D["afterSupplier"] "ms na załadowanie danych dostawcy...")
-    Sleep(D["afterSupplier"])
+    SafeSleep(D["afterSupplier"])
     LogMsg("[KROK 3] OK – dostawca wybrany")
 
     ; =========================================================================
@@ -162,10 +185,10 @@ try {
     ; =========================================================================
     LogMsg("[KROK 4] Wpisuję nr faktury: '" invoiceNr "'")
     Send(invoiceNr)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
     LogMsg("[KROK 4] Send: {Tab}")
     Send("{Tab}")
-    Sleep(D["afterClick"])
+    SafeSleep(D["afterClick"])
     LogMsg("[KROK 4] OK")
 
     ; =========================================================================
@@ -199,13 +222,13 @@ try {
     LogMsg("[KROK 8] Kliknij (880, 472)")
     ClickAt(880, 472)
     Send("^a")
-    Sleep(100)
+    SafeSleep(100)
     LogMsg("[KROK 8] Send: '" rateStr "'")
     Send(rateStr)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
     LogMsg("[KROK 8] Send: {Tab}")
     Send("{Tab}")
-    Sleep(D["afterClick"])
+    SafeSleep(D["afterClick"])
     LogMsg("[KROK 8] OK")
 
     ; =========================================================================
@@ -220,9 +243,9 @@ try {
     ; =========================================================================
     LogMsg("[KROK 10] Send: {F7} (Dodaj z kartoteki)")
     Send("{F7}")
-    Sleep(D["afterF7"])
+    SafeSleep(D["afterF7"])
     WinActivate("ahk_exe FakturaF.exe")
-    Sleep(300)
+    SafeSleep(300)
     LogMsg("[KROK 10] OK")
 
     ; =========================================================================
@@ -252,16 +275,16 @@ try {
         ; --- KROK 11: F3 → kod (5 cyfr) → Enter (1. szukaj) -----------------
         LogMsg("  [F3] Otwieram wyszukiwarkę kartoteki...")
         Send("{F3}")
-        Sleep(D["afterF3"])
+        SafeSleep(D["afterF3"])
 
         LogMsg("  [TYPE] Wpisuję kod: '" kod5 "'")
         Send(kod5)
-        Sleep(D["afterType"])
+        SafeSleep(D["afterType"])
 
         LogMsg("  [ENTER-1] Uruchamiam wyszukiwanie...")
         Send("{Enter}")
         LogMsg("  Czekam " D["searchWait"] "ms na wyniki...")
-        Sleep(D["searchWait"])
+        SafeSleep(D["searchWait"])
 
         ; --- Detekcja produktu -----------------------------------------------
         productFound := CheckProductFound(kod5)
@@ -273,7 +296,7 @@ try {
             ; -----------------------------------------------------------------
             LogMsg("  [KROK 16] → F6: dodaję nowy produkt")
             Send("{Escape}")
-            Sleep(300)
+            SafeSleep(300)
             HandleNewProduct(kod5, nazwa, ilosc, invPLN)
             g_New++
             AddResult(kod5, nazwa, ilosc, true, "nowy produkt (F6)")
@@ -284,17 +307,17 @@ try {
         ; --- ENTER-2: potwierdź wybór z listy --------------------------------
         LogMsg("  [ENTER-2] Potwierdzam wybór produktu z listy")
         Send("{Enter}")
-        Sleep(D["afterEnter"])
+        SafeSleep(D["afterEnter"])
 
         ; --- KROK 12: Wpisz ilość --------------------------------------------
         LogMsg("  [KROK 12] Wpisuję ilość: " ilosc " → '" qtyStr "'")
         Send(qtyStr)
-        Sleep(D["afterType"])
+        SafeSleep(D["afterType"])
 
         ; Przejdź do pola ceny (Tab)
         LogMsg("  [TAB] Przechodzę do pola ceny")
         Send("{Tab}")
-        Sleep(400)
+        SafeSleep(400)
 
         ; --- KROK 13: Sprawdź i ewentualnie popraw cenę ----------------------
         sysPriceStr := ReadFieldViaClipboard()
@@ -313,17 +336,17 @@ try {
             LogMsg("  [KROK 13] KOREKTA CENY: " sysPrice " → " invPLN " ('" newPriceStr "')")
             Send("^a")
             Send(newPriceStr)
-            Sleep(D["afterType"])
+            SafeSleep(D["afterType"])
         } else {
             LogMsg("  [KROK 13] Cena OK – zgodna z fakturą (" sysPrice ")")
         }
         Send("{Enter}")
-        Sleep(300)
+        SafeSleep(300)
 
         ; --- KROK 14: F12 ----------------------------------------------------
         LogMsg("  [KROK 14] Send: {F12} – zatwierdzam pozycję")
         Send("{F12}")
-        Sleep(D["afterF12"])
+        SafeSleep(D["afterF12"])
 
         g_Added++
         AddResult(kod5, nazwa, ilosc, true, "")
@@ -342,12 +365,12 @@ try {
     LogMsg("[KROK 17c] Kliknij pole rabatu (892, 412)")
     ClickAt(892, 412)
     Send("^a")
-    Sleep(100)
+    SafeSleep(100)
     ; BUG7 FIX: zawsze wysyłamy jako string bez części ułamkowej
     discountStr := String(Integer(Round(discount)))
     LogMsg("[KROK 17c] Wpisuję rabat: " discountStr)
     Send(discountStr)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
     LogMsg("[KROK 17d] Kliknij OK rabatu (933, 410)")
     ClickAt(933, 410)
     LogMsg("[KROK 17] OK – rabat wpisany")
@@ -357,7 +380,7 @@ try {
     ; =========================================================================
     LogMsg("[KROK 21] Send: {F12} – zapis końcowy faktury")
     Send("{F12}")
-    Sleep(D["afterSave"])
+    SafeSleep(D["afterSave"])
 
     elapsed := Round((A_TickCount - g_StartTime) / 1000)
     LogSep()
@@ -369,7 +392,13 @@ try {
     LogSep()
     WriteResult(true, "")
 } catch Error as e {
-    LogMsg("BŁĄD KRYTYCZNY: " e.Message)
+    if (e.Extra = "USER_STOP") {
+        LogMsg("[STOP] Skrypt zatrzymany przez uzytkownika (F2)")
+        ToolTip()
+        WriteResult(false, "Zatrzymano przez uzytkownika")
+        ExitApp(2)
+    }
+    LogMsg("BLAD KRYTYCZNY: " e.Message)
     LogMsg("  Stack: " e.Stack)
     g_Errors++
     WriteResult(false, e.Message)
@@ -381,6 +410,26 @@ ExitApp(0)
 ; ============================================================================
 ; FUNKCJE
 ; ============================================================================
+
+; ── BEZPIECZNY SLEEP (sprawdza F1/F2 co 50 ms) ───────────────────────────────
+SafeSleep(ms) {
+    global g_Paused, g_Stopped
+    if ms <= 0
+        return
+    elapsed := 0
+    while elapsed < ms {
+        if g_Stopped
+            throw Error("Zatrzymano przez uzytkownika (F2)", -1, "USER_STOP")
+        while g_Paused {
+            Sleep(50)
+            if g_Stopped
+                throw Error("Zatrzymano przez uzytkownika (F2)", -1, "USER_STOP")
+        }
+        chunk := Min(50, ms - elapsed)
+        Sleep(chunk)
+        elapsed += chunk
+    }
+}
 
 ; ── DETEKCJA PRODUKTU W KATALOGU ─────────────────────────────────────────────
 ;
@@ -442,7 +491,7 @@ HandleNewProduct(kod5, nazwa, ilosc, invPLN) {
 
     LogMsg("    [F6] Otwieram formularz nowego produktu")
     Send("{F6}")
-    Sleep(800)
+    SafeSleep(800)
 
     ; Tłumaczenie nazwy na Polski
     LogMsg("    [TRANSLATE] Tłumaczę: '" SubStr(nazwa, 1, 60) "'")
@@ -452,45 +501,45 @@ HandleNewProduct(kod5, nazwa, ilosc, invPLN) {
     ; Wpisz kod
     LogMsg("    [F6] Wpisuję kod: '" kod5 "'")
     Send("^a")
-    Sleep(100)
+    SafeSleep(100)
     Send(kod5)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
     Send("{Tab}")
-    Sleep(300)
+    SafeSleep(300)
 
     ; Wpisz przetłumaczoną nazwę
     LogMsg("    [F6] Wpisuję nazwę PL: '" SubStr(polishName, 1, 60) "'")
     Send("^a")
-    Sleep(100)
+    SafeSleep(100)
     Send(polishName)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
 
     ; Ilość – klik (694, 543)
     LogMsg("    [F6] Kliknij pole ilości (694, 543)")
     ClickAt(694, 543)
     Send("^a")
-    Sleep(100)
+    SafeSleep(100)
     qtyStr := FormatQty(ilosc)
     LogMsg("    [F6] Wpisuję ilość: " ilosc " → '" qtyStr "'")
     Send(qtyStr)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
     Send("{Enter}")
-    Sleep(300)
+    SafeSleep(300)
 
     ; Cena
     priceStr := FormatPrice2(invPLN)
     LogMsg("    [F6] Wpisuję cenę: " invPLN " → '" priceStr "'")
     Send("^a")
-    Sleep(100)
+    SafeSleep(100)
     Send(priceStr)
-    Sleep(D["afterType"])
+    SafeSleep(D["afterType"])
     Send("{Enter}")
-    Sleep(300)
+    SafeSleep(300)
 
     ; Zatwierdź pozycję
     LogMsg("    [F6] {F12} – zatwierdzam nową pozycję")
     Send("{F12}")
-    Sleep(D["afterF12"])
+    SafeSleep(D["afterF12"])
 }
 
 ; ── TŁUMACZENIE VIA FLASK API ─────────────────────────────────────────────────
@@ -527,7 +576,7 @@ ClickAt(x, y) {
     global D
     LogMsg("    [CLICK] (" x ", " y ")")
     Click(x, y)
-    Sleep(D["afterClick"])
+    SafeSleep(D["afterClick"])
 }
 
 ; ── ODCZYTAJ WARTOŚĆ POLA PRZEZ SCHOWEK ──────────────────────────────────────
